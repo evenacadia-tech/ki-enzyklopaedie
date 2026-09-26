@@ -1,0 +1,45 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "KI-Enzyklopädie",
+  "version": "0.1.0",
+  "identifier": "de.evenacadia.ki-enzyklopaedie",
+  "mainBinaryName": "ki-enzyklopaedie",
+  "build": {
+    "beforeDevCommand": "npm run dev",
+    "devUrl": "http://localhost:5173",
+    "beforeBuildCommand": "npm run build",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "windows": [
+      {
+        "label": "main",
+        "title": "KI-Enzyklopädie",
+        "width": 1280,
+        "height": 860,
+        "minWidth": 960,
+        "minHeight": 640,
+        "resizable": true,
+        "center": true,
+        "backgroundColor": "#101010"
+      }
+    ],
+    "security": {
+      "csp": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data:; connect-src 'self' ipc: http://ipc.localhost"
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": ["nsis"],
+    "category": "Education",
+    "shortDescription": "KI-Enzyklopädie — quellenbelegtes Nachschlagewerk zu KI-Consulting, EU AI Act, Governance und KI-Ethik",
+    "longDescription": "Reine Lese-App: quervernetzte, quellenbelegte Artikel zu KI-Consulting, EU AI Act, Governance & Zertifizierung, Fallbeispielen sowie KI-Ethik und Verhaltensforschung. Läuft offline als native Windows-App.",
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ]
+  }
+}

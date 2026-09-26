@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="dark" />
+    <meta name="theme-color" content="#101010" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <title>KI-Enzyklopädie</title>
+    <script>
+      // Schriftgröße vor dem ersten Paint setzen — kein Umspringen beim Start.
+      (() => {
+        let s = 'normal';
+        try {
+          const v = localStorage.getItem('ki-enzyklopaedie.schrift.v1');
+          if (v === 'kompakt' || v === 'gross') s = v;
+        } catch {
+          s = 'normal';
+        }
+        document.documentElement.dataset.schrift = s;
+      })();
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

@@ -1,0 +1,33 @@
+[package]
+name = "ki-enzyklopaedie"
+version = "0.1.0"
+description = "KI-Enzyklopädie — reine Lese-App als native Desktop-Anwendung"
+authors = ["evenacadia"]
+edition = "2021"
+default-run = "ki-enzyklopaedie"
+# Tauri 2 verlangt >= 1.77; gebaut wird mit der lokal installierten Toolchain.
+rust-version = "1.77"
+
+# Bibliothek trägt `run()`, main.rs ist der dünne Einstieg. `_lib`-Suffix vermeidet
+# den Cargo-Namenskonflikt zwischen Binär- und Bibliotheksziel (Tauri-2-Scaffold).
+[lib]
+name = "ki_enzyklopaedie_lib"
+crate-type = ["lib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+# Öffnet die Quellen-Links im Standard-Browser (Capability `opener:default`).
+tauri-plugin-opener = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+# Release: kleine .exe bei verträglicher Bauzeit (kein LTO, hohe codegen-units).
+[profile.release]
+panic = "abort"
+codegen-units = 16
+lto = false
+opt-level = "s"
+strip = true
