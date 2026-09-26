@@ -104,7 +104,8 @@ try {
   const status = await page.evaluate(() => ({
     status: document.querySelector('.tagebuch__status')?.textContent?.trim(),
     fuss: document.querySelector('.leiste__fuss')?.textContent?.trim(),
-    ort: document.querySelector('.leiste__fuss')?.getAttribute('title'),
+    ort: document.querySelector('.leiste__fuss span[title]')?.getAttribute('title'),
+    sicherung: document.querySelector('.fuss__knopf')?.textContent?.trim(),
     heading: document.querySelector('h1')?.textContent?.trim(),
   }));
 

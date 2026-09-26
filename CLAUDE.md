@@ -6,8 +6,15 @@ persönliches Tagebuch mit Kalender. Kein Quiz, kein RAG, kein Konto.
 User-Entscheide 26.09.2026: „reine enzyklopädie app, kein RAG oder sonstige unnötige
 features“; später am selben Tag ergänzt um (1) mehr Wissensinhalt zum Thema Strategie
 und (2) eine Tagebuch-Funktion mit Kalenderübersicht, dauerhaft gespeichert, Tage für
-besondere Ereignisse markierbar. Persistenz gibt es deshalb genau dreifach: zwei
-localStorage-Einstellungen (Schrift, Register) und das Tagebuch.
+besondere Ereignisse markierbar. Persistenz gibt es deshalb genau vierfach: drei
+localStorage-Stände (Schrift, Register, gelesene Artikel — Letzteres seit 27.09.2026 als
+Lesezeichen für die Lesestrecken) und das Tagebuch. Ausbau 27.09.2026 (User: „ja leg
+los“ auf die Vorschlagsliste): Tagebuch-Suche, offene Fragen (Zeilen mit „?“), Rückblick,
+Jahresübersicht, Kalenderwochen, nächstes Ereignis, Markdown-Export, Sicherungskopie,
+Lesestrecke Vor/Zurück, Lesefortschritt, Scrollposition bei Zurück, Fensterlage merken.
+Bewusst NICHT gebaut: Kategorien/Tags über „Ereignis“ hinaus, Textformatierung im
+Tagebuch, Statistiken/Streaks. Offen (brauchen eine Antwort des Users): Tagebuch auf
+zwei Rechnern (Speicherordner wählbar) und Artikel-Verknüpfung aus Tagebuchtagen.
 
 **Design (User-Entscheid 26.09.2026):** Farbwelt = Windows-Terminal-Schema
 „Nakama Champagne Night“ (das Dirigenten-Terminal, NICHT das Nakama-Plugin-Design).
@@ -63,11 +70,26 @@ Zwei Quellen, ein Load-Guard (`src/inhalt/index.ts` → `vereinige` in
 - Modell/Kalender-Arithmetik in `src/tagebuch/modell.ts` (Woche ab Montag, immer 42
   Zellen, Datumsrechnen in UTC, Anzeige lokal), Zustand mit verzögerter Sicherung in
   `zustand.ts` (500 ms nach der letzten Änderung, sofort bei Blur/Tageswechsel/Schließen).
-- Speicher: nativ `tagebuch.json` im App-Datenordner über `tauri-plugin-store`
-  (Windows: `%APPDATA%\de.evenacadia.ki-enzyklopaedie\tagebuch.json`); im Browser
-  localStorage `ki-enzyklopaedie.tagebuch.v1`. Ein Ladefehler sperrt das Schreiben —
-  nie eine leere Kopie über echte Daten schreiben. Datenformat `{ version: 1, tage }`.
+- Speicher: nativ `tagebuch.json` im App-Datenordner über eigene Tauri-Commands in
+  `src-tauri/src/lib.rs` (`tagebuch_lese`, `tagebuch_schreibe`, `tagebuch_pfad`;
+  Windows: `%APPDATA%\de.evenacadia.ki-enzyklopaedie\tagebuch.json`). Schreiben ist
+  atomar (`.tmp` + fsync + rename) und legt vorher `tagebuch.bak.json` ab — aber nur,
+  wenn die bisherige Datei gültiges JSON ist (eine defekte Datei darf die Sicherung nicht
+  überschreiben). Im Browser localStorage `ki-enzyklopaedie.tagebuch.v1`. Ein Ladefehler
+  sperrt das Schreiben — nie eine leere Kopie über echte Daten schreiben; eine LEERE
+  Datei ist deshalb ein Fehler, nur eine FEHLENDE ein leeres Tagebuch (`parseDatei` in
+  `speicher.ts`). Datenformat `{ version: 1, tage }`.
 - Routen `#/tagebuch` (heute) und `#/tagebuch/<YYYY-MM-DD>`; Tage sind Links.
+- Konventionen ohne neues Datenfeld: Zeilen mit „?“ am Anfang sind offene Fragen
+  (`fragenImText`/`offeneFragen` in `modell.ts`); der Kalender zeigt ISO-Kalenderwochen
+  (`kalenderwoche`, Donnerstag-Regel, mit Tests für 53-Wochen-Jahre).
+- Export: `src/tagebuch/export.ts` → Markdown; nativ `@tauri-apps/plugin-dialog`
+  (`save`) + Command `datei_schreibe`, im Browser Blob-Download.
+- Lesefortschritt (Enzyklopädie): `src/lesefortschritt.ts`, localStorage
+  `ki-enzyklopaedie.gelesen.v1`; Lesestrecke Vor/Zurück aus `enzyklopaedie.lesestrecke(id)`
+  (nur Sammlungen, nicht Grundlagen). „Weiter“ markiert den aktuellen Artikel als gelesen.
+- Scrollposition bei Zurück/Vor: Navigation API (`navigate`-Event, `navigationType ===
+  'traverse'`) in `App.tsx`; ohne diese API (jsdom) beginnt jede Route oben.
 
 ## Fallen
 
@@ -77,8 +99,15 @@ Zwei Quellen, ein Load-Guard (`src/inhalt/index.ts` → `vereinige` in
   verweigert“, und `tauri build` endet TROTZDEM mit Exit-Code 0 — die alte .exe bleibt
   liegen. Eine zweite Instanz hängt sich zudem an den WebView2-Prozess der ersten; der
   Debug-Port für `npm run nativ:beweis` ist dann nicht erreichbar.
-- `tauri-plugin-store` in `Cargo.toml` auf `"2"` halten; crates.io führt bereits eine
-  `3.0.0-alpha` (für Tauri 3). npm-Paket `@tauri-apps/plugin-store` ^2.x passend.
+- Tauri-Plugins in `Cargo.toml` auf `"2"` halten (`tauri-plugin-opener`, `-dialog`,
+  `-window-state`); crates.io führt bereits `3.0.0-alpha` (für Tauri 3), `cargo search`
+  und `cargo info` zeigen nur diese. npm-Pakete `@tauri-apps/plugin-*` ^2.x passend.
+  `tauri-plugin-store` wird seit 27.09.2026 nicht mehr benutzt (es schrieb mit
+  `fs::write`, nicht atomar).
+- Eine laufende Instanz reagiert nicht auf `CloseMainWindow()`; vor einem Build
+  `Stop-Process -Name ki-enzyklopaedie` (das Tagebuch ist spätestens 500 ms nach der
+  letzten Änderung gesichert). Bash-Tool: `$p` in doppelten Anführungszeichen wird von
+  der Shell expandiert — PowerShell-Skripte über das PowerShell-Tool ausführen.
 - `tauri icon` erzeugt auch `icons/android` und `icons/ios`; `npm run tauri:icon`
   entfernt sie wieder. Nicht einchecken.
 - Externe Links im nativen Fenster laufen über `@tauri-apps/plugin-opener`
