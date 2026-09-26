@@ -203,3 +203,92 @@ export function nachbarEintrag(tage: Tage, datum: string, richtung: 1 | -1): str
   for (let i = liste.length - 1; i >= 0; i--) if (liste[i] < datum) return liste[i];
   return null;
 }
+
+/** Tage im Monat (28–31). */
+export function tageImMonat(jahr: number, monat: number): number {
+  return new Date(Date.UTC(jahr, monat, 0)).getUTCDate();
+}
+
+/**
+ * ISO-8601-Kalenderwoche („KW“): die Woche, in der der erste Donnerstag des
+ * Jahres liegt, ist KW 1. Gerechnet über den Donnerstag derselben Woche.
+ */
+export function kalenderwoche(iso: string): number {
+  const d = utc(iso);
+  d.setUTCDate(d.getUTCDate() + 3 - wochentag(iso));
+  const jahresanfang = Date.UTC(d.getUTCFullYear(), 0, 1);
+  return Math.floor((d.getTime() - jahresanfang) / 86400000 / 7) + 1;
+}
+
+/** Ganze Tage von `von` bis `bis` (negativ, wenn `bis` früher liegt). */
+export function tageZwischen(von: string, bis: string): number {
+  return Math.round((utc(bis).getTime() - utc(von).getTime()) / 86400000);
+}
+
+/** „heute“, „morgen“, „in 5 Tagen“ — für den Hinweis auf das nächste Ereignis. */
+export function inTagenText(tage: number): string {
+  if (tage <= 0) return 'heute';
+  if (tage === 1) return 'morgen';
+  return `in ${tage} Tagen`;
+}
+
+/** Der erste markierte Tag ab `abDatum` (einschließlich) — oder null. */
+export function naechstesEreignis(tage: Tage, abDatum: string): string | null {
+  return sortierteTage(tage).find((d) => d >= abDatum && tage[d].markiert) ?? null;
+}
+
+export interface Frage {
+  datum: string;
+  text: string;
+}
+
+/** Zeilen, die mit „?“ beginnen — die offenen Fragen eines Textes, ohne das Fragezeichen. */
+export function fragenImText(text: string): string[] {
+  return text
+    .split(/\r?\n/)
+    .map((z) => z.trim())
+    .filter((z) => z.startsWith('?'))
+    .map((z) => z.slice(1).trim())
+    .filter((z) => z !== '');
+}
+
+/** Alle offenen Fragen des Tagebuchs: neueste Tage zuerst, innerhalb des Tages in Textreihenfolge. */
+export function offeneFragen(tage: Tage): Frage[] {
+  const out: Frage[] = [];
+  for (const datum of sortierteTage(tage).reverse()) {
+    for (const text of fragenImText(tage[datum].text)) out.push({ datum, text });
+  }
+  return out;
+}
+
+/** Kurzfassung für die Randspalte: bis zu `zeilen` nicht-leere Zeilen, höchstens `max` Zeichen. */
+export function vorschau(text: string, zeilen = 3, max = 220): string {
+  const alle = text
+    .split(/\r?\n/)
+    .map((z) => z.trim())
+    .filter((z) => z !== '');
+  let out = alle.slice(0, zeilen).join('\n');
+  if (out.length > max) return out.slice(0, max - 1).trimEnd() + '…';
+  if (alle.length > zeilen) out += ' …';
+  return out;
+}
+
+export interface Monatsbilanz {
+  monat: number;
+  eintraege: number;
+  ereignisse: number;
+}
+
+export const MONATE_KURZ = ['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'] as const;
+
+/** Je Monat eines Jahres: Tage mit Eintrag und markierte Tage — die Jahresübersicht. */
+export function jahresbilanz(tage: Tage, jahr: number): Monatsbilanz[] {
+  const out: Monatsbilanz[] = Array.from({ length: 12 }, (_, i) => ({ monat: i + 1, eintraege: 0, ereignisse: 0 }));
+  for (const [datum, e] of Object.entries(tage)) {
+    const z = zerlege(datum);
+    if (!z || z.jahr !== jahr) continue;
+    out[z.monat - 1].eintraege++;
+    if (e.markiert) out[z.monat - 1].ereignisse++;
+  }
+  return out;
+}

@@ -162,6 +162,24 @@ describe('der echte Bestand', () => {
     }
   });
 
+  it('kennt für jeden Sammlungs-Artikel seine Lesestrecke, für Grundlagen keine', () => {
+    for (const a of enzyklopaedie.liste) {
+      const s = enzyklopaedie.lesestrecke(a.id);
+      if (a.sammlung === GRUNDLAGEN_ID) {
+        expect(s).toBeNull();
+        continue;
+      }
+      expect(s).not.toBeNull();
+      const reihe = enzyklopaedie.liste.filter((x) => x.sammlung === a.sammlung);
+      expect(s!.gesamt).toBe(reihe.length);
+      expect(reihe[s!.position - 1].id).toBe(a.id);
+      expect(s!.vorheriger?.id ?? null).toBe(s!.position > 1 ? reihe[s!.position - 2].id : null);
+      expect(s!.naechster?.id ?? null).toBe(s!.position < reihe.length ? reihe[s!.position].id : null);
+      expect(s!.sammlungTitel).toBe(enzyklopaedie.sammlungTitel(a.sammlung));
+    }
+    expect(enzyklopaedie.lesestrecke('gibt-es-nicht')).toBeNull();
+  });
+
   it('macht Rückverweise symmetrisch zu den Vorwärtsverweisen', () => {
     for (const a of enzyklopaedie.liste) {
       for (const v of a.verweise) {

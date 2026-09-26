@@ -4,14 +4,23 @@ import {
   formatiereMonat,
   formatiereTagKurz,
   formatiereTagLang,
+  fragenImText,
   heute,
+  inTagenText,
   istIsoDatum,
   istLeer,
+  jahresbilanz,
+  kalenderwoche,
   monatsraster,
   nachbarEintrag,
+  naechstesEreignis,
   normalisiereDaten,
+  offeneFragen,
+  tageImMonat,
+  tageZwischen,
   verschiebeMonat,
   verschiebeTag,
+  vorschau,
   wochentag,
   zerlege,
   type Eintrag,
@@ -117,5 +126,83 @@ describe('Einträge', () => {
     expect(nachbarEintrag(tage, '2026-09-15', -1)).toBe('2026-09-10');
     expect(nachbarEintrag(tage, '2026-09-20', 1)).toBeNull();
     expect(nachbarEintrag({}, '2026-09-20', -1)).toBeNull();
+  });
+
+  it('rechnet die ISO-Kalenderwoche (Jahreswechsel, 53-Wochen-Jahre)', () => {
+    expect(kalenderwoche('2026-01-01')).toBe(1); // Donnerstag → KW 1
+    expect(kalenderwoche('2026-09-26')).toBe(39);
+    expect(kalenderwoche('2026-12-31')).toBe(53); // 2026 beginnt am Donnerstag → 53 Wochen
+    expect(kalenderwoche('2027-01-01')).toBe(53); // Freitag, gehört noch zur letzten Woche 2026
+    expect(kalenderwoche('2027-01-04')).toBe(1);
+    expect(kalenderwoche('2024-12-30')).toBe(1); // Montag, gehört schon zu KW 1 von 2025
+    expect(kalenderwoche('2021-01-03')).toBe(53); // Sonntag der letzten Woche 2020
+  });
+
+  it('kennt die Tage im Monat', () => {
+    expect(tageImMonat(2026, 2)).toBe(28);
+    expect(tageImMonat(2028, 2)).toBe(29);
+    expect(tageImMonat(2026, 12)).toBe(31);
+  });
+
+  it('zählt Tage zwischen zwei Daten und formuliert „in N Tagen“', () => {
+    expect(tageZwischen('2026-09-26', '2026-10-01')).toBe(5);
+    expect(tageZwischen('2026-10-01', '2026-09-26')).toBe(-5);
+    expect(tageZwischen('2026-03-28', '2026-03-30')).toBe(2); // über die Zeitumstellung
+    expect(inTagenText(0)).toBe('heute');
+    expect(inTagenText(1)).toBe('morgen');
+    expect(inTagenText(5)).toBe('in 5 Tagen');
+  });
+
+  it('findet das nächste markierte Ereignis ab einem Datum', () => {
+    const tage = {
+      '2026-09-01': e({ markiert: true, ereignis: 'alt' }),
+      '2026-09-10': e({ text: 'kein Ereignis' }),
+      '2026-09-26': e({ markiert: true, ereignis: 'heute' }),
+      '2026-10-14': e({ markiert: true, ereignis: 'Workshop' }),
+    };
+    expect(naechstesEreignis(tage, '2026-09-26')).toBe('2026-09-26');
+    expect(naechstesEreignis(tage, '2026-09-27')).toBe('2026-10-14');
+    expect(naechstesEreignis(tage, '2026-10-15')).toBeNull();
+  });
+
+  it('sammelt Zeilen mit „?“ am Anfang als offene Fragen, neueste zuerst', () => {
+    expect(fragenImText('Tag.\n? Was heißt EBIT?\n  ?Wann Kickoff\n?\nKeine Frage?')).toEqual([
+      'Was heißt EBIT?',
+      'Wann Kickoff',
+    ]);
+    const tage = {
+      '2026-09-01': e({ text: '? Erste Frage' }),
+      '2026-09-10': e({ text: 'nichts' }),
+      '2026-09-20': e({ text: '? A\n? B' }),
+    };
+    expect(offeneFragen(tage)).toEqual([
+      { datum: '2026-09-20', text: 'A' },
+      { datum: '2026-09-20', text: 'B' },
+      { datum: '2026-09-01', text: 'Erste Frage' },
+    ]);
+  });
+
+  it('kürzt die Vorschau auf wenige Zeilen und Zeichen', () => {
+    expect(vorschau('')).toBe('');
+    expect(vorschau('eins\n\nzwei\ndrei\nvier')).toBe('eins\nzwei\ndrei …');
+    expect(vorschau('eins\nzwei')).toBe('eins\nzwei');
+    const lang = 'x'.repeat(300);
+    expect(vorschau(lang)).toHaveLength(220);
+    expect(vorschau(lang).endsWith('…')).toBe(true);
+  });
+
+  it('bilanziert ein Jahr monatsweise', () => {
+    const tage = {
+      '2026-09-01': e({ text: 'a' }),
+      '2026-09-26': e({ markiert: true, ereignis: 'E' }),
+      '2026-12-31': e({ text: 'z' }),
+      '2027-01-01': e({ text: 'neu' }),
+    };
+    const b = jahresbilanz(tage, 2026);
+    expect(b).toHaveLength(12);
+    expect(b[8]).toEqual({ monat: 9, eintraege: 2, ereignisse: 1 });
+    expect(b[11]).toEqual({ monat: 12, eintraege: 1, ereignisse: 0 });
+    expect(b[0]).toEqual({ monat: 1, eintraege: 0, ereignisse: 0 });
+    expect(jahresbilanz(tage, 2027)[0].eintraege).toBe(1);
   });
 });

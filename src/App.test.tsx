@@ -1,7 +1,9 @@
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { App } from './App';
 import { enzyklopaedie } from './inhalt';
+import { STRATEGIE_ID } from './inhalt/sammlungen/strategie';
+import { GELESEN_KEY, _setzeGelesenFuerTests } from './lesefortschritt';
 import { formatiereTagLang, heute } from './tagebuch/modell';
 import { BROWSER_KEY } from './tagebuch/speicher';
 import { konfiguriereTagebuch } from './tagebuch/zustand';
@@ -171,11 +173,12 @@ describe('Tagebuch', () => {
     const feld = await screen.findByRole('textbox', { name: 'Gedanken zu diesem Tag' });
     await waitFor(() => expect(feld).toHaveValue('Rückblick.'));
     expect(screen.getByRole('switch', { name: 'Besonderes Ereignis' })).toHaveAttribute('aria-checked', 'true');
+    // Rückblick: der vorherige Eintrag mit Datum und Vorschau seines Textes.
     const blaettern = screen.getByRole('navigation', { name: 'Zwischen Einträgen blättern' });
-    expect(within(blaettern).getByRole('link', { name: /Vorheriger: 10\.09\.2026/ })).toHaveAttribute(
-      'href',
-      '#/tagebuch/2026-09-10',
-    );
+    expect(within(blaettern).getByRole('heading', { name: 'Vorheriger Eintrag' })).toBeInTheDocument();
+    const rueckblick = within(blaettern).getByRole('link', { name: /Do 10\.09\.2026/ });
+    expect(rueckblick).toHaveAttribute('href', '#/tagebuch/2026-09-10');
+    expect(rueckblick).toHaveTextContent('Erstes Kundengespräch beobachtet.');
     // Der Monat listet beide Einträge; die Vorschau nimmt die erste Zeile.
     const monat = screen.getByRole('region', { name: /Einträge im Monat/ });
     expect(within(monat).getAllByRole('link')).toHaveLength(2);
@@ -188,5 +191,160 @@ describe('Tagebuch', () => {
     expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Diese Adresse gibt es nicht.');
     setzeHash('#/');
     expect(screen.getByRole('navigation', { name: 'Artikelverzeichnis' })).toBeInTheDocument();
+  });
+
+  function bestand() {
+    window.localStorage.setItem(
+      BROWSER_KEY,
+      JSON.stringify({
+        version: 1,
+        tage: {
+          '2026-09-10': { text: 'Porter erklärt bekommen.\n? Was heißt EBIT?', markiert: false, ereignis: '', geaendert: '' },
+          '2026-09-26': { text: 'Rückblick.', markiert: true, ereignis: 'Strategie-Workshop', geaendert: '' },
+          '2026-10-02': { text: '? Wann ist der Kickoff', markiert: false, ereignis: '', geaendert: '' },
+        },
+      }),
+    );
+  }
+
+  it('durchsucht das Tagebuch: Trefferliste mit Hervorhebung, Treffertage im Kalender', async () => {
+    bestand();
+    render(<App />);
+    setzeHash('#/tagebuch/2026-09-26');
+    await screen.findByRole('region', { name: /Einträge im Monat/ });
+    const feld = screen.getByRole('searchbox', { name: 'Im Tagebuch suchen' });
+    fireEvent.change(feld, { target: { value: 'porter' } });
+    const nav = screen.getByRole('navigation', { name: 'Suchergebnisse im Tagebuch' });
+    const links = within(nav).getAllByRole('link');
+    expect(links).toHaveLength(1);
+    expect(links[0]).toHaveAttribute('href', '#/tagebuch/2026-09-10');
+    expect(links[0].querySelector('mark')).toHaveTextContent('Porter');
+    const kalender = screen.getByLabelText('Kalender');
+    expect(within(kalender).getByRole('link', { name: /10\. September 2026.*Suchtreffer/ }).className).toContain('tag--treffer');
+    // Ereignis-Bezeichnung zählt auch.
+    fireEvent.change(feld, { target: { value: 'workshop' } });
+    expect(within(nav).getAllByRole('link')[0]).toHaveAttribute('href', '#/tagebuch/2026-09-26');
+    fireEvent.keyDown(feld, { key: 'Escape' });
+    expect(screen.getByRole('navigation', { name: 'Einträge' })).toBeInTheDocument();
+  });
+
+  it('sammelt offene Fragen aus allen Tagen, neueste zuerst, und zählt sie am Tag', async () => {
+    bestand();
+    render(<App />);
+    setzeHash('#/tagebuch/2026-09-10');
+    const fragen = await screen.findByRole('region', { name: /Offene Fragen/ });
+    const links = within(fragen).getAllByRole('link');
+    expect(links).toHaveLength(2);
+    expect(links[0]).toHaveTextContent('Wann ist der Kickoff');
+    expect(links[0]).toHaveAttribute('href', '#/tagebuch/2026-10-02');
+    expect(links[1]).toHaveTextContent('Was heißt EBIT?');
+    expect(screen.getByText('1 offene')).toBeInTheDocument();
+  });
+
+  it('zeigt Kalenderwochen und die Jahresübersicht mit Zählern', async () => {
+    bestand();
+    render(<App />);
+    setzeHash('#/tagebuch/2026-09-26');
+    await screen.findByRole('region', { name: /Einträge im Monat/ });
+    const kalender = screen.getByLabelText('Kalender');
+    expect(within(kalender).getByTitle('Kalenderwoche 39')).toHaveTextContent('39');
+    fireEvent.click(screen.getByRole('button', { name: 'September 2026', expanded: false }));
+    const jahr = screen.getByRole('group', { name: 'Monate 2026' });
+    expect(within(jahr).getByRole('button', { name: 'September 2026: 2 Einträge, 1 Ereignisse' })).toBeInTheDocument();
+    expect(within(jahr).getByRole('button', { name: 'Oktober 2026: 1 Einträge, 0 Ereignisse' })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Nächstes Jahr' }));
+    expect(screen.getByRole('group', { name: 'Monate 2027' })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /Januar 2027/ }));
+    expect(screen.getByRole('button', { name: 'Januar 2027', expanded: false })).toBeInTheDocument();
+    expect(screen.getByLabelText('Kalender')).toBeInTheDocument();
+  });
+
+  it('weist auf das nächste Ereignis hin und exportiert als Markdown-Download', async () => {
+    const naechster = new Date();
+    naechster.setDate(naechster.getDate() + 3);
+    const iso = heute(naechster);
+    window.localStorage.setItem(
+      BROWSER_KEY,
+      JSON.stringify({ version: 1, tage: { [iso]: { text: '', markiert: true, ereignis: 'Kundentermin', geaendert: '' } } }),
+    );
+    render(<App />);
+    setzeHash('#/tagebuch');
+    const hinweis = await screen.findByRole('link', { name: /Nächstes Ereignis · in 3 Tagen.*Kundentermin/ });
+    expect(hinweis).toHaveAttribute('href', `#/tagebuch/${iso}`);
+
+    const urls: string[] = [];
+    const objectUrl = vi.fn(() => 'blob:test');
+    const revoke = vi.fn();
+    Object.defineProperty(URL, 'createObjectURL', { value: objectUrl, configurable: true });
+    Object.defineProperty(URL, 'revokeObjectURL', { value: revoke, configurable: true });
+    const klick = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(function (this: HTMLAnchorElement) {
+      urls.push(this.download);
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Exportieren' }));
+    await waitFor(() => expect(urls).toHaveLength(1));
+    expect(urls[0]).toMatch(/^tagebuch-\d{4}-\d{2}-\d{2}\.md$/);
+    expect(objectUrl).toHaveBeenCalledTimes(1);
+    expect(await screen.findByRole('button', { name: 'Exportiert ✓' })).toBeInTheDocument();
+    klick.mockRestore();
+  });
+});
+
+describe('Lesestrecke und Lesefortschritt', () => {
+  beforeEach(() => {
+    window.localStorage.clear();
+    window.location.hash = '';
+    _setzeGelesenFuerTests([]);
+    konfiguriereTagebuch(null);
+  });
+  afterEach(cleanup);
+
+  const strecke = enzyklopaedie.liste.filter((a) => a.sammlung === STRATEGIE_ID);
+
+  it('bietet Vor/Zurück in der Lesereihenfolge, nicht bei Grundlagen', () => {
+    render(<App />);
+    setzeHash(`#/artikel/${strecke[1].id}`);
+    const nav = screen.getByRole('navigation', { name: 'Lesestrecke' });
+    expect(within(nav).getByRole('link', { name: new RegExp('Zurück.*' + strecke[0].titel.slice(0, 12)) })).toHaveAttribute(
+      'href',
+      `#/artikel/${strecke[0].id}`,
+    );
+    expect(within(nav).getByRole('link', { name: new RegExp('Weiter.*' + strecke[2].titel.slice(0, 12)) })).toHaveAttribute(
+      'href',
+      `#/artikel/${strecke[2].id}`,
+    );
+    expect(screen.getByText(`2 von ${strecke.length}`)).toBeInTheDocument();
+
+    setzeHash('#/artikel/rag');
+    const ohne = screen.getByRole('navigation', { name: 'Lesestrecke' });
+    expect(within(ohne).queryAllByRole('link')).toHaveLength(0);
+    expect(within(ohne).getByRole('button', { name: 'Als gelesen markieren' })).toBeInTheDocument();
+  });
+
+  it('merkt „gelesen“ dauerhaft: Marke, Haken im Register, Weiterlesen auf der Startseite', () => {
+    render(<App />);
+    const start = screen.getByRole('region', { name: 'Weiterlesen' });
+    expect(within(start).getByText(`0 von ${strecke.length} gelesen`)).toBeInTheDocument();
+    expect(within(start).getByRole('link', { name: new RegExp('Beginnen.*' + strecke[0].titel.slice(0, 12)) })).toHaveAttribute(
+      'href',
+      `#/artikel/${strecke[0].id}`,
+    );
+
+    setzeHash(`#/artikel/${strecke[0].id}`);
+    fireEvent.click(screen.getByRole('button', { name: 'Als gelesen markieren' }));
+    expect(screen.getByRole('button', { name: 'Gelesen', pressed: true })).toBeInTheDocument();
+    expect(JSON.parse(window.localStorage.getItem(GELESEN_KEY)!)).toEqual([strecke[0].id]);
+    const verzeichnis = screen.getByRole('navigation', { name: 'Artikelverzeichnis' });
+    const eintrag = within(verzeichnis).getByRole('link', { current: 'page' });
+    expect(within(eintrag).getByRole('img', { name: 'gelesen' })).toBeInTheDocument();
+
+    // „Weiter“ merkt den aktuellen Artikel ebenfalls als gelesen.
+    setzeHash(`#/artikel/${strecke[1].id}`);
+    fireEvent.click(within(screen.getByRole('navigation', { name: 'Lesestrecke' })).getByRole('link', { name: /Weiter/ }));
+    expect(JSON.parse(window.localStorage.getItem(GELESEN_KEY)!)).toEqual([strecke[0].id, strecke[1].id]);
+
+    setzeHash('#/');
+    const start2 = screen.getByRole('region', { name: 'Weiterlesen' });
+    expect(within(start2).getByText(`2 von ${strecke.length} gelesen`)).toBeInTheDocument();
+    expect(within(start2).getByRole('link', { name: new RegExp('Weiter.*' + strecke[2].titel.slice(0, 12)) })).toBeInTheDocument();
   });
 });

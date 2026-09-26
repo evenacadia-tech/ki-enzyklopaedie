@@ -2,14 +2,18 @@ import { useEffect, type KeyboardEvent } from 'react';
 import { hrefTagebuch } from '../router';
 import {
   LEER,
+  WOCHENTAGE,
   formatiereMonat,
   formatiereTagDatum,
   formatiereTagKurz,
   formatiereTagLang,
   formatiereUhrzeit,
+  fragenImText,
   heute,
   nachbarEintrag,
   verschiebeTag,
+  vorschau,
+  wochentag,
   zaehleWoerter,
   zerlege,
 } from '../tagebuch/modell';
@@ -25,8 +29,9 @@ import {
 // ─────────────────────────────────────────────────────────────────────────────
 // Ein Tag im Tagebuch: Datum als Titel, Tag-Navigation, der Ereignis-Schalter mit
 // Kurzbezeichnung, das Textfeld (wächst mit, speichert von selbst) und rechts die
-// Randspalte mit Fakten und dem Blättern zwischen Einträgen. Gerendert wird nur;
-// Zustand und Sicherung liegen in `tagebuch/zustand.ts`.
+// Randspalte mit Fakten, dem Rückblick auf den vorherigen Eintrag und dem Sprung
+// zum nächsten. Gerendert wird nur; Zustand und Sicherung liegen in
+// `tagebuch/zustand.ts`.
 // ─────────────────────────────────────────────────────────────────────────────
 
 function statusText(z: TagebuchZustand, hatEintrag: boolean): string {
@@ -41,6 +46,11 @@ function statusText(z: TagebuchZustand, hatEintrag: boolean): string {
       if (z.zuletztGespeichert) return `Gespeichert ${formatiereUhrzeit(z.zuletztGespeichert)}`;
       return hatEintrag ? 'Gespeichert' : 'Noch kein Eintrag';
   }
+}
+
+/** „Do 10.09.2026“ — Wochentag plus volles Datum für Verweise über Monatsgrenzen. */
+function tagMitWochentag(iso: string): string {
+  return `${WOCHENTAGE[wochentag(iso)]} ${formatiereTagDatum(iso)}`;
 }
 
 export function TagebuchAnsicht({ datum }: { datum: string }) {
@@ -63,7 +73,9 @@ export function TagebuchAnsicht({ datum }: { datum: string }) {
   const heuteIso = heute();
   const vor = nachbarEintrag(z.tage, datum, -1);
   const nach = nachbarEintrag(z.tage, datum, 1);
+  const vorEintrag = vor ? z.tage[vor] : null;
   const woerter = zaehleWoerter(e.text);
+  const fragen = fragenImText(e.text).length;
   const geaendert = e.geaendert ? new Date(e.geaendert) : null;
   const geaendertText =
     geaendert && !Number.isNaN(geaendert.getTime())
@@ -151,7 +163,11 @@ export function TagebuchAnsicht({ datum }: { datum: string }) {
               className="tagebuch__feld"
               value={e.text}
               disabled={!bereit}
-              placeholder="Was ist heute passiert? Was habe ich gelernt, was blieb unklar, was will ich nachfragen?"
+              placeholder={
+                'Was ist heute passiert? Was habe ich gelernt, was blieb unklar?\n' +
+                'Eine Zeile, die mit „?“ beginnt, wird zur offenen Frage — die Seitenleiste sammelt sie, ' +
+                'bis das Fragezeichen wieder entfernt ist.'
+              }
               onChange={(ev) => aendereEintrag(datum, { text: ev.target.value })}
               onBlur={() => void speichereJetzt()}
               onKeyDown={aufTaste}
@@ -175,6 +191,10 @@ export function TagebuchAnsicht({ datum }: { datum: string }) {
               <dd>{woerter}</dd>
             </div>
             <div className="fakten__zeile">
+              <dt className="mono">Fragen</dt>
+              <dd>{fragen === 0 ? 'keine' : fragen === 1 ? '1 offene' : `${fragen} offene`}</dd>
+            </div>
+            <div className="fakten__zeile">
               <dt className="mono">Geändert</dt>
               <dd>{geaendertText}</dd>
             </div>
@@ -186,23 +206,23 @@ export function TagebuchAnsicht({ datum }: { datum: string }) {
 
           {vor || nach ? (
             <nav className="rand__block" aria-label="Zwischen Einträgen blättern">
-              <h2 className="rand__titel mono">Einträge</h2>
-              <ul className="rueck">
-                {vor ? (
-                  <li>
-                    <a className="rueck__link" href={hrefTagebuch(vor)}>
-                      ← Vorheriger: {formatiereTagDatum(vor)}
-                    </a>
-                  </li>
-                ) : null}
-                {nach ? (
-                  <li>
-                    <a className="rueck__link" href={hrefTagebuch(nach)}>
-                      Nächster: {formatiereTagDatum(nach)} →
-                    </a>
-                  </li>
-                ) : null}
-              </ul>
+              {vor && vorEintrag ? (
+                <>
+                  <h2 className="rand__titel mono">Vorheriger Eintrag</h2>
+                  <a className="rueckblick" href={hrefTagebuch(vor)}>
+                    <span className="rueckblick__kopf mono">
+                      ← {tagMitWochentag(vor)}
+                      {vorEintrag.markiert && vorEintrag.ereignis.trim() ? ` · ${vorEintrag.ereignis.trim()}` : ''}
+                    </span>
+                    {vorschau(vorEintrag.text) ? <span className="rueckblick__text">{vorschau(vorEintrag.text)}</span> : null}
+                  </a>
+                </>
+              ) : null}
+              {nach ? (
+                <a className="rueck__link" href={hrefTagebuch(nach)}>
+                  Nächster: {tagMitWochentag(nach)} →
+                </a>
+              ) : null}
             </nav>
           ) : null}
         </aside>

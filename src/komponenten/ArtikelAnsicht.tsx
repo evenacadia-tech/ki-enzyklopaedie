@@ -2,12 +2,13 @@ import { useCallback, type MouseEvent, type ReactNode } from 'react';
 import { enzyklopaedie, type Artikel, type Quelle, type Verweis } from '../inhalt';
 import { hrefArtikel } from '../router';
 import { host, istTauri, oeffneExtern } from '../oeffnen';
+import { setzeGelesen, useGelesen } from '../lesefortschritt';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Der Artikel: Kopf (Pfad, Titel, Synonyme) → Lede → Rumpf (flach oder gegliedert)
-// → Siehe auch → Quellen. Rechts die Randspalte mit Fakten, Inhalt (bei gegliederten
-// Artikeln) und „Verweist hierher". Alles kommt aufgelöst aus `enzyklopaedie`; hier
-// wird nur gerendert.
+// → Siehe auch → Quellen → Lesestrecke (Zurück / Gelesen / Weiter). Rechts die
+// Randspalte mit Fakten, Inhalt (bei gegliederten Artikeln) und „Verweist hierher".
+// Alles kommt aufgelöst aus `enzyklopaedie`; hier wird nur gerendert.
 // ─────────────────────────────────────────────────────────────────────────────
 
 function nummer(i: number): string {
@@ -51,8 +52,18 @@ function VerweisChips({ verweise }: { verweise: readonly Verweis[] }) {
   );
 }
 
+function Haken() {
+  return (
+    <svg viewBox="0 0 12 12" aria-hidden="true">
+      <path d="M2.5 6.5 5 9l4.5-6" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
 export function ArtikelAnsicht({ artikel }: { artikel: Artikel }) {
   const a = artikel;
+  const strecke = enzyklopaedie.lesestrecke(a.id);
+  const gelesen = useGelesen().has(a.id);
   const springeZu = (i: number) => {
     const el = document.getElementById(abschnittId(a.id, i));
     if (el && typeof el.scrollIntoView === 'function') el.scrollIntoView({ block: 'start', behavior: 'smooth' });
@@ -70,6 +81,12 @@ export function ArtikelAnsicht({ artikel }: { artikel: Artikel }) {
           {a.unsicher ? (
             <span className="marke marke--wandel" title="Rechtslage oder Faktum im Fluss — Stand beim Abruf der Quellen">
               im Wandel
+            </span>
+          ) : null}
+          {gelesen ? (
+            <span className="marke marke--gelesen" title="Als gelesen markiert">
+              <Haken />
+              Gelesen
             </span>
           ) : null}
         </p>
@@ -139,6 +156,47 @@ export function ArtikelAnsicht({ artikel }: { artikel: Artikel }) {
               ))}
             </ol>
           </section>
+
+          <nav className={'lesestrecke' + (strecke ? '' : ' lesestrecke--ohne')} aria-label="Lesestrecke">
+            {strecke ? (
+              strecke.vorheriger ? (
+                <a className="lesestrecke__link lesestrecke__link--zurueck" href={hrefArtikel(strecke.vorheriger.id)}>
+                  <span className="lesestrecke__label mono">← Zurück</span>
+                  <span className="lesestrecke__titel">{strecke.vorheriger.titel}</span>
+                </a>
+              ) : (
+                <span className="lesestrecke__link lesestrecke__link--leer" aria-hidden="true">
+                  <span className="lesestrecke__label mono">Anfang der Lesestrecke</span>
+                </span>
+              )
+            ) : null}
+            <button
+              type="button"
+              className={'lesestrecke__gelesen' + (gelesen ? ' lesestrecke__gelesen--an' : '')}
+              aria-pressed={gelesen}
+              onClick={() => setzeGelesen(a.id, !gelesen)}
+              title={gelesen ? 'Markierung „gelesen“ entfernen' : 'Diesen Artikel als gelesen merken'}
+            >
+              <Haken />
+              {gelesen ? 'Gelesen' : 'Als gelesen markieren'}
+            </button>
+            {strecke ? (
+              strecke.naechster ? (
+                <a
+                  className="lesestrecke__link lesestrecke__link--weiter"
+                  href={hrefArtikel(strecke.naechster.id)}
+                  onClick={() => setzeGelesen(a.id, true)}
+                >
+                  <span className="lesestrecke__label mono">Weiter →</span>
+                  <span className="lesestrecke__titel">{strecke.naechster.titel}</span>
+                </a>
+              ) : (
+                <span className="lesestrecke__link lesestrecke__link--leer lesestrecke__link--weiter" aria-hidden="true">
+                  <span className="lesestrecke__label mono">Ende der Lesestrecke</span>
+                </span>
+              )
+            ) : null}
+          </nav>
         </div>
 
         <aside className="artikel__rand" aria-label="Zum Artikel">
@@ -151,6 +209,14 @@ export function ArtikelAnsicht({ artikel }: { artikel: Artikel }) {
               <dt className="mono">Thema</dt>
               <dd>{enzyklopaedie.themaLabel(a.thema)}</dd>
             </div>
+            {strecke ? (
+              <div className="fakten__zeile">
+                <dt className="mono">Lesestrecke</dt>
+                <dd>
+                  {strecke.position} von {strecke.gesamt}
+                </dd>
+              </div>
+            ) : null}
             <div className="fakten__zeile">
               <dt className="mono">Quellen</dt>
               <dd>{a.quellen.length}</dd>

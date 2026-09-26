@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent, type RefObject } from 'react';
 import { enzyklopaedie, type Artikel } from '../inhalt';
-import { hervorhebe, suche, tokenisiere, type Treffer } from '../suche/logic';
+import { suche, tokenisiere, type Treffer } from '../suche/logic';
 import { hrefArtikel } from '../router';
 import { setzeRegister, useEinstellungen, type Register } from '../einstellungen';
+import { useGelesen } from '../lesefortschritt';
+import { Markiert } from './Markiert';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Seitenleiste = das Verzeichnis: ein Suchfeld, darunter entweder die Treffer
@@ -144,17 +146,23 @@ function RegisterWahl({ register }: { register: Register }) {
   );
 }
 
-function Eintrag({ artikel, aktiv }: { artikel: Artikel; aktiv: boolean }) {
+function Eintrag({ artikel, aktiv, gelesen }: { artikel: Artikel; aktiv: boolean; gelesen: boolean }) {
   return (
     <li>
       <a
-        className={'eintrag' + (aktiv ? ' eintrag--aktiv' : '')}
+        className={'eintrag' + (aktiv ? ' eintrag--aktiv' : '') + (gelesen ? ' eintrag--gelesen' : '')}
         href={hrefArtikel(artikel.id)}
         aria-current={aktiv ? 'page' : undefined}
         data-eintrag
       >
         <span className="eintrag__titel">{artikel.titel}</span>
         {artikel.unsicher ? <span className="eintrag__wandel" title="im Wandel" aria-label="im Wandel" /> : null}
+        {gelesen ? (
+          <svg className="eintrag__gelesen" viewBox="0 0 12 12" role="img" aria-label="gelesen">
+            <title>gelesen</title>
+            <path d="M2.5 6.5 5 9l4.5-6" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        ) : null}
       </a>
     </li>
   );
@@ -162,6 +170,7 @@ function Eintrag({ artikel, aktiv }: { artikel: Artikel; aktiv: boolean }) {
 
 function ThemenRegister({ aktivId }: { aktivId: string | null }) {
   const ebenen = useMemo(() => enzyklopaedie.gliederung(), []);
+  const gelesen = useGelesen();
   return (
     <>
       {ebenen.map((e) => (
@@ -175,7 +184,7 @@ function ThemenRegister({ aktivId }: { aktivId: string | null }) {
               </h3>
               <ul className="abteilung__liste">
                 {ab.artikel.map((a) => (
-                  <Eintrag key={a.id} artikel={a} aktiv={a.id === aktivId} />
+                  <Eintrag key={a.id} artikel={a} aktiv={a.id === aktivId} gelesen={gelesen.has(a.id)} />
                 ))}
               </ul>
             </section>
@@ -188,6 +197,7 @@ function ThemenRegister({ aktivId }: { aktivId: string | null }) {
 
 function AzRegister({ aktivId }: { aktivId: string | null }) {
   const gruppen = useMemo(() => enzyklopaedie.alphabetisch(), []);
+  const gelesen = useGelesen();
   return (
     <div className="ebene">
       {gruppen.map((g) => (
@@ -198,21 +208,12 @@ function AzRegister({ aktivId }: { aktivId: string | null }) {
           </h3>
           <ul className="abteilung__liste">
             {g.artikel.map((a) => (
-              <Eintrag key={a.id} artikel={a} aktiv={a.id === aktivId} />
+              <Eintrag key={a.id} artikel={a} aktiv={a.id === aktivId} gelesen={gelesen.has(a.id)} />
             ))}
           </ul>
         </section>
       ))}
     </div>
-  );
-}
-
-function Markiert({ text, tokens }: { text: string; tokens: readonly string[] }) {
-  const segmente = useMemo(() => hervorhebe(text, tokens), [text, tokens]);
-  return (
-    <>
-      {segmente.map((s, i) => (s.treffer ? <mark key={i}>{s.text}</mark> : <span key={i}>{s.text}</span>))}
-    </>
   );
 }
 

@@ -48,6 +48,17 @@ export interface Buchstabengruppe {
   artikel: Artikel[];
 }
 
+/** Stellung eines Artikels in der Lesereihenfolge seiner Sammlung (nicht für die Grundlagen). */
+export interface Lesestrecke {
+  sammlung: string;
+  sammlungTitel: string;
+  /** 1-basiert. */
+  position: number;
+  gesamt: number;
+  vorheriger: Verweis | null;
+  naechster: Verweis | null;
+}
+
 export interface Enzyklopaedie {
   meta: InhaltMeta;
   themen: Thema[];
@@ -63,6 +74,8 @@ export interface Enzyklopaedie {
   gliederung(): Ebene[];
   /** A–Z-Register: alphabetisch nach Titel, gruppiert nach Anfangsbuchstabe. */
   alphabetisch(): Buchstabengruppe[];
+  /** Vor/Zurück in der Lesereihenfolge der Sammlung — null für Grundlagen-Artikel und unbekannte IDs. */
+  lesestrecke(id: string): Lesestrecke | null;
 }
 
 /** Die Basis-Sammlung der Akademie — ihre 41 Artikel gliedern sich nach Thema. */
@@ -153,6 +166,23 @@ export function erstelleEnzyklopaedie(daten: InhaltRoh): Enzyklopaedie {
     return ebenen;
   };
 
+  // Lesestrecken: je Sammlung außer den Grundlagen die Artikel in Autoren-Reihenfolge.
+  const strecken = new Map<string, Lesestrecke>();
+  for (const s of daten.sammlungen) {
+    if (s.id === GRUNDLAGEN_ID) continue;
+    const reihe = liste.filter((a) => a.sammlung === s.id);
+    reihe.forEach((a, i) => {
+      strecken.set(a.id, {
+        sammlung: s.id,
+        sammlungTitel: s.titel,
+        position: i + 1,
+        gesamt: reihe.length,
+        vorheriger: i > 0 ? verweisAuf(reihe[i - 1]) : null,
+        naechster: i < reihe.length - 1 ? verweisAuf(reihe[i + 1]) : null,
+      });
+    });
+  }
+
   const alphabetisch = (): Buchstabengruppe[] => {
     const gruppen: Buchstabengruppe[] = [];
     for (const a of [...liste].sort(nachTitel)) {
@@ -182,6 +212,7 @@ export function erstelleEnzyklopaedie(daten: InhaltRoh): Enzyklopaedie {
     quellenAnzahl: () => new Set(liste.flatMap((a) => a.quellen.map((q) => q.url))).size,
     gliederung,
     alphabetisch,
+    lesestrecke: (id) => strecken.get(id) ?? null,
   };
 }
 

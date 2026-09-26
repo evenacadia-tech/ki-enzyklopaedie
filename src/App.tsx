@@ -13,10 +13,27 @@ import { TagebuchAnsicht } from './komponenten/TagebuchAnsicht';
 
 const TITEL = 'KI-Enzyklopädie';
 
+// Navigation API (Chromium, also WebView2 und der Web-Preview): sagt uns VOR dem
+// hashchange, ob die Route per Zurück/Vor („traverse“) gewechselt wird. Nur dann
+// wird die alte Scrollposition wiederhergestellt; ein Klick auf einen Link beginnt oben.
+interface NavigateEreignis {
+  navigationType: 'push' | 'replace' | 'reload' | 'traverse';
+}
+interface NavigationApi {
+  addEventListener(typ: 'navigate', fn: (e: NavigateEreignis) => void): void;
+  removeEventListener(typ: 'navigate', fn: (e: NavigateEreignis) => void): void;
+}
+function navigationApi(): NavigationApi | null {
+  const n = (window as unknown as { navigation?: NavigationApi }).navigation;
+  return n && typeof n.addEventListener === 'function' ? n : null;
+}
+
 export function App() {
   const route = useRoute();
   const suchRef = useRef<HTMLInputElement>(null);
   const buehneRef = useRef<HTMLElement>(null);
+  const positionen = useRef(new Map<string, number>());
+  const traverse = useRef(false);
 
   const artikel = route.art === 'artikel' ? enzyklopaedie.nachId(route.id) : undefined;
   // „#/tagebuch“ ohne Tag meint den heutigen Tag (lokale Zeit).
@@ -33,13 +50,32 @@ export function App() {
         : TITEL;
   }, [artikel, tagebuchDatum]);
 
-  // Neue Seite → oben anfangen und den Lesebereich fokussieren (Tastatur/Screenreader).
+  // Zurück/Vor merken sich die Leseposition; alles andere beginnt oben.
+  useEffect(() => {
+    const nav = navigationApi();
+    if (!nav) return;
+    const merke = (e: NavigateEreignis) => {
+      traverse.current = e.navigationType === 'traverse';
+    };
+    nav.addEventListener('navigate', merke);
+    return () => nav.removeEventListener('navigate', merke);
+  }, []);
+
+  // Neue Seite → oben anfangen (bzw. bei Zurück/Vor an die alte Stelle) und den
+  // Lesebereich fokussieren (Tastatur/Screenreader).
   useEffect(() => {
     const b = buehneRef.current;
     if (!b) return;
-    b.scrollTop = 0;
+    const gemerkt = traverse.current ? positionen.current.get(window.location.hash) : undefined;
+    traverse.current = false;
+    b.scrollTop = gemerkt ?? 0;
     b.focus({ preventScroll: true });
   }, [routeKey]);
+
+  const merkePosition = () => {
+    const b = buehneRef.current;
+    if (b) positionen.current.set(window.location.hash, b.scrollTop);
+  };
 
   // „/" springt ins Suchfeld — außer der Fokus liegt schon in einem Eingabefeld.
   useEffect(() => {
@@ -73,11 +109,11 @@ export function App() {
       <Kopf bereich={bereich} />
       <div className="rahmen">
         {tagebuchDatum ? (
-          <TagebuchLeiste datum={tagebuchDatum} />
+          <TagebuchLeiste datum={tagebuchDatum} suchRef={suchRef} />
         ) : (
           <Seitenleiste aktivId={artikel?.id ?? null} suchRef={suchRef} />
         )}
-        <main className="buehne" ref={buehneRef} tabIndex={-1}>
+        <main className="buehne" ref={buehneRef} tabIndex={-1} onScroll={merkePosition}>
           {route.art === 'start' ? (
             <Start />
           ) : route.art === 'artikel' ? (
