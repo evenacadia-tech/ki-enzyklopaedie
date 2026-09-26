@@ -65,3 +65,34 @@ export interface InhaltRoh {
   sammlungen: Sammlung[];
   artikel: ArtikelRoh[];
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Eigene Sammlungen — von Hand gepflegte Artikel, die NICHT aus der Akademie
+// exportiert werden (z. B. `sammlungen/strategie/`). Autoren schreiben nur
+// `abschnitte`; `absaetze` (flacher Rumpf) und `sammlung` leitet `vereinige` ab,
+// damit Rumpf und Gliederung nie auseinanderlaufen. Der Load-Guard prüft danach
+// beide Quellen gemeinsam (Querverweise dürfen in beide Richtungen zeigen).
+// ─────────────────────────────────────────────────────────────────────────────
+
+export interface EigenerArtikel {
+  id: string;
+  titel: string;
+  thema: string;
+  einleitung: string;
+  /** Mindestens ein Abschnitt mit mindestens einem Absatz. */
+  abschnitte: Abschnitt[];
+  quellen: Quelle[];
+  sieheAuch: string[];
+  synonyme: string[];
+  unsicher?: boolean;
+}
+
+export interface EigeneSammlung {
+  sammlung: Sammlung;
+  /** Themen, die diese Sammlung neu einführt (bestehende IDs dürfen wiederverwendet werden). */
+  themen: Thema[];
+  /** ISO-Datum des letzten inhaltlichen Stands. */
+  stand: string;
+  /** Artikel in Lesereihenfolge. */
+  artikel: EigenerArtikel[];
+}

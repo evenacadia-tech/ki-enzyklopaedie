@@ -1,5 +1,6 @@
 import roh from './artikel.json';
 import type { ArtikelRoh, InhaltMeta, InhaltRoh, Sammlung, Thema } from './typen';
+import { eigeneSammlungen, vereinige } from './sammlungen';
 
 export type { Quelle, Abschnitt, Thema, Sammlung, InhaltMeta } from './typen';
 
@@ -181,5 +182,6 @@ export function erstelleEnzyklopaedie(daten: InhaltRoh): Enzyklopaedie {
   };
 }
 
-/** Die App-Enzyklopädie — beim Modul-Laden gebaut und geprüft (Load-Guard). */
-export const enzyklopaedie: Enzyklopaedie = erstelleEnzyklopaedie(roh as InhaltRoh);
+/** Die App-Enzyklopädie — Akademie-Export + eigene Sammlungen, beim Modul-Laden
+ *  vereinigt und geprüft (Load-Guard über den Gesamtbestand). */
+export const enzyklopaedie: Enzyklopaedie = erstelleEnzyklopaedie(vereinige(roh as InhaltRoh, eigeneSammlungen));
