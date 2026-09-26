@@ -3,10 +3,13 @@ import { normalisiereDaten, type TagebuchDaten } from './modell';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Wo das Tagebuch liegt. Im nativen Fenster: eine JSON-Datei `tagebuch.json` im
-// App-Datenordner (Windows: %APPDATA%\de.evenacadia.ki-enzyklopaedie\), geschrieben
-// über das Tauri-Store-Plugin — eine Datei, die der Nutzer sichern und kopieren
-// kann. Im Browser (Web-Preview, Tests): localStorage. Beide liefern dieselbe
-// tolerant normalisierte Form; ein Lesefehler wirft und sperrt damit das Schreiben.
+// App-Datenordner (Windows: %APPDATA%\de.evenacadia.ki-enzyklopaedie\), gelesen und
+// geschrieben über eigene Tauri-Commands — atomar (erst .tmp, dann Umbenennen) und
+// mit Sicherungskopie `tagebuch.bak.json` der vorigen Fassung. Im Browser
+// (Web-Preview, Tests): localStorage. Beide liefern dieselbe tolerant normalisierte
+// Form; ein Lesefehler wirft und sperrt damit das Schreiben. Nur „Datei fehlt“ ist
+// ein leeres Tagebuch — eine leere oder halbe Datei ist ein Fehler, damit nie eine
+// leere Kopie über echte Daten (oder über die Sicherungskopie) geschrieben wird.
 // ─────────────────────────────────────────────────────────────────────────────
 
 export interface TagebuchSpeicher {
@@ -19,6 +22,7 @@ export interface TagebuchSpeicher {
 
 export const BROWSER_KEY = 'ki-enzyklopaedie.tagebuch.v1';
 export const DATEI_NAME = 'tagebuch.json';
+export const SICHERUNG_NAME = 'tagebuch.bak.json';
 
 export function browserSpeicher(storage: () => Storage = () => window.localStorage): TagebuchSpeicher {
   return {
@@ -36,29 +40,34 @@ export function browserSpeicher(storage: () => Storage = () => window.localStora
   };
 }
 
+/** Text der Datei → Rohdaten; wirft mit Hinweis auf die Sicherungskopie, wenn die Datei kein JSON ist. */
+export function parseDatei(text: string | null): unknown {
+  if (text === null) return null;
+  try {
+    if (text.trim() === '') throw new Error('Datei ist leer');
+    return JSON.parse(text) as unknown;
+  } catch (e) {
+    const grund = e instanceof Error ? e.message : String(e);
+    throw new Error(`${DATEI_NAME} ist nicht lesbar (${grund}). Sicherungskopie: ${SICHERUNG_NAME} im selben Ordner.`, {
+      cause: e,
+    });
+  }
+}
+
 export function dateiSpeicher(): TagebuchSpeicher {
-  let store: Promise<import('@tauri-apps/plugin-store').Store> | null = null;
-  const oeffne = () =>
-    (store ??= import('@tauri-apps/plugin-store').then((m) =>
-      m.load(DATEI_NAME, { autoSave: false, defaults: { version: 1, tage: {} } }),
-    ));
+  const invoke = async () => (await import('@tauri-apps/api/core')).invoke;
   return {
     art: 'datei',
     async lade() {
-      const s = await oeffne();
-      const version = await s.get<unknown>('version');
-      const tage = await s.get<unknown>('tage');
-      return normalisiereDaten({ version, tage });
+      const text = await (await invoke())<string | null>('tagebuch_lese');
+      return normalisiereDaten(parseDatei(text));
     },
     async speichere(daten) {
-      const s = await oeffne();
-      await s.set('version', daten.version);
-      await s.set('tage', daten.tage);
-      await s.save();
+      // Lesbar formatiert — die Datei ist zum Kopieren und Sichern gedacht.
+      await (await invoke())('tagebuch_schreibe', { inhalt: JSON.stringify(daten, null, 2) + '\n' });
     },
     async ort() {
-      const { appDataDir, join } = await import('@tauri-apps/api/path');
-      return join(await appDataDir(), DATEI_NAME);
+      return (await invoke())<string>('tagebuch_pfad');
     },
   };
 }
