@@ -6,3 +6,4 @@ src-tauri/gen/schemas/
 *.local
 .DS_Store
 Thumbs.db
+.playwright-mcp/
