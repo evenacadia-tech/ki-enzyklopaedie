@@ -1,11 +1,18 @@
 import { enzyklopaedie } from '../inhalt';
-import { HREF_START } from '../router';
+import { HREF_START, HREF_TAGEBUCH } from '../router';
 import { schriftLabel, schriftStufen, setzeSchrift, useEinstellungen } from '../einstellungen';
 
-// Kopfzeile: Wortmarke (führt zur Übersicht) + die eine Lese-Einstellung, die
-// dauerhaft sichtbar sein muss — die Schriftgröße des Lesetexts.
-export function Kopf() {
+export type Bereich = 'enzyklopaedie' | 'tagebuch';
+
+// Kopfzeile: Wortmarke (führt zur Übersicht), der Bereichs-Umschalter (Enzyklopädie /
+// Tagebuch — echte Links, damit Zurück/Vor funktionieren) und die eine Lese-
+// Einstellung, die dauerhaft sichtbar sein muss — die Schriftgröße des Lesetexts.
+export function Kopf({ bereich }: { bereich: Bereich }) {
   const { schrift } = useEinstellungen();
+  const bereiche: { id: Bereich; label: string; href: string }[] = [
+    { id: 'enzyklopaedie', label: 'Enzyklopädie', href: HREF_START },
+    { id: 'tagebuch', label: 'Tagebuch', href: HREF_TAGEBUCH },
+  ];
   return (
     <header className="kopf">
       <a className="kopf__marke" href={HREF_START} aria-label="KI-Enzyklopädie — zur Übersicht">
@@ -16,6 +23,18 @@ export function Kopf() {
         </span>
       </a>
       <div className="kopf__werkzeuge">
+        <nav className="segment" aria-label="Bereich">
+          {bereiche.map((b) => (
+            <a
+              key={b.id}
+              href={b.href}
+              className={'segment__knopf' + (bereich === b.id ? ' segment__knopf--aktiv' : '')}
+              aria-current={bereich === b.id ? 'page' : undefined}
+            >
+              {b.label}
+            </a>
+          ))}
+        </nav>
         <div className="segment" role="radiogroup" aria-label="Schriftgröße des Lesetexts">
           {schriftStufen.map((s) => (
             <button

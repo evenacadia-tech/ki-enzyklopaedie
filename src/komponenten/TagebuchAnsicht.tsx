@@ -1,0 +1,212 @@
+import { useEffect, type KeyboardEvent } from 'react';
+import { hrefTagebuch } from '../router';
+import {
+  LEER,
+  formatiereMonat,
+  formatiereTagDatum,
+  formatiereTagKurz,
+  formatiereTagLang,
+  formatiereUhrzeit,
+  heute,
+  nachbarEintrag,
+  verschiebeTag,
+  zaehleWoerter,
+  zerlege,
+} from '../tagebuch/modell';
+import {
+  aendereEintrag,
+  ladeTagebuch,
+  ladeTagebuchErneut,
+  speichereJetzt,
+  useTagebuch,
+  type TagebuchZustand,
+} from '../tagebuch/zustand';
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Ein Tag im Tagebuch: Datum als Titel, Tag-Navigation, der Ereignis-Schalter mit
+// Kurzbezeichnung, das Textfeld (wächst mit, speichert von selbst) und rechts die
+// Randspalte mit Fakten und dem Blättern zwischen Einträgen. Gerendert wird nur;
+// Zustand und Sicherung liegen in `tagebuch/zustand.ts`.
+// ─────────────────────────────────────────────────────────────────────────────
+
+function statusText(z: TagebuchZustand, hatEintrag: boolean): string {
+  switch (z.sicherung) {
+    case 'ausstehend':
+      return 'Ungesichert …';
+    case 'speichert':
+      return 'Speichert …';
+    case 'fehler':
+      return `Nicht gespeichert: ${z.sicherungFehler ?? 'unbekannter Fehler'}`;
+    default:
+      if (z.zuletztGespeichert) return `Gespeichert ${formatiereUhrzeit(z.zuletztGespeichert)}`;
+      return hatEintrag ? 'Gespeichert' : 'Noch kein Eintrag';
+  }
+}
+
+export function TagebuchAnsicht({ datum }: { datum: string }) {
+  const z = useTagebuch();
+  useEffect(() => {
+    void ladeTagebuch();
+  }, []);
+  // Beim Verlassen des Tages sofort sichern (Remount pro Tag über key={datum}).
+  useEffect(
+    () => () => {
+      void speichereJetzt();
+    },
+    [datum],
+  );
+
+  const e = z.tage[datum] ?? LEER;
+  const bereit = z.status === 'bereit';
+  const hatEintrag = z.tage[datum] !== undefined;
+  const teile = zerlege(datum)!;
+  const heuteIso = heute();
+  const vor = nachbarEintrag(z.tage, datum, -1);
+  const nach = nachbarEintrag(z.tage, datum, 1);
+  const woerter = zaehleWoerter(e.text);
+  const geaendert = e.geaendert ? new Date(e.geaendert) : null;
+  const geaendertText =
+    geaendert && !Number.isNaN(geaendert.getTime())
+      ? `${formatiereTagDatum(heute(geaendert))}, ${formatiereUhrzeit(e.geaendert)}`
+      : '—';
+
+  const aufTaste = (ev: KeyboardEvent<HTMLElement>) => {
+    if ((ev.ctrlKey || ev.metaKey) && ev.key.toLowerCase() === 's') {
+      ev.preventDefault();
+      void speichereJetzt();
+    }
+  };
+
+  return (
+    <article className="tagebuch" aria-labelledby="tagebuch-titel">
+      <header className="artikel__kopf tagebuch__kopf">
+        <p className="pfad mono">
+          <span>Tagebuch</span>
+          <span className="pfad__trenner" aria-hidden="true">
+            /
+          </span>
+          <span>{formatiereMonat(teile.jahr, teile.monat)}</span>
+          {e.markiert ? (
+            <span className="marke marke--ereignis" title="Als besonderes Ereignis markiert">
+              Ereignis
+            </span>
+          ) : null}
+        </p>
+        <h1 className="artikel__titel" id="tagebuch-titel">
+          {formatiereTagLang(datum)}
+        </h1>
+        <nav className="tagebuch__nav mono" aria-label="Tag wechseln">
+          <a href={hrefTagebuch(verschiebeTag(datum, -1))}>← {formatiereTagKurz(verschiebeTag(datum, -1))}</a>
+          {datum === heuteIso ? <span className="tagebuch__aktuell">Heute</span> : <a href={hrefTagebuch(heuteIso)}>Heute</a>}
+          <a href={hrefTagebuch(verschiebeTag(datum, 1))}>{formatiereTagKurz(verschiebeTag(datum, 1))} →</a>
+        </nav>
+      </header>
+
+      {z.status === 'fehler' ? (
+        <p className="tagebuch__fehler" role="alert">
+          Das Tagebuch konnte nicht geladen werden: {z.ladeFehler}. Es wird nichts überschrieben.{' '}
+          <button type="button" className="textlink" onClick={() => void ladeTagebuchErneut()}>
+            Erneut versuchen
+          </button>
+        </p>
+      ) : null}
+
+      <div className="tagebuch__raster">
+        <div className="tagebuch__inhalt">
+          <div className="ereigniszeile">
+            <button
+              type="button"
+              role="switch"
+              aria-checked={e.markiert}
+              className="schalter"
+              disabled={!bereit}
+              onClick={() => aendereEintrag(datum, { markiert: !e.markiert })}
+            >
+              <span className="schalter__knopf" aria-hidden="true" />
+              <span>Besonderes Ereignis</span>
+            </button>
+            {e.markiert ? (
+              <input
+                type="text"
+                className="ereignisfeld"
+                aria-label="Bezeichnung des Ereignisses"
+                placeholder="Was war das Ereignis? z. B. Strategie-Workshop mit der Chefin"
+                value={e.ereignis}
+                maxLength={120}
+                disabled={!bereit}
+                onChange={(ev) => aendereEintrag(datum, { ereignis: ev.target.value })}
+                onBlur={() => void speichereJetzt()}
+                onKeyDown={aufTaste}
+                autoComplete="off"
+              />
+            ) : null}
+          </div>
+
+          <div>
+            <label className="tagebuch__label mono" htmlFor="tagebuch-text">
+              Gedanken zu diesem Tag
+            </label>
+            <textarea
+              id="tagebuch-text"
+              className="tagebuch__feld"
+              value={e.text}
+              disabled={!bereit}
+              placeholder="Was ist heute passiert? Was habe ich gelernt, was blieb unklar, was will ich nachfragen?"
+              onChange={(ev) => aendereEintrag(datum, { text: ev.target.value })}
+              onBlur={() => void speichereJetzt()}
+              onKeyDown={aufTaste}
+              spellCheck
+            />
+            <p className={'tagebuch__status mono' + (z.sicherung === 'fehler' ? ' tagebuch__status--fehler' : '')} role="status">
+              <span>{z.status === 'laedt' || z.status === 'aus' ? 'Lädt …' : statusText(z, hatEintrag)}</span>
+              {z.sicherung === 'fehler' ? (
+                <button type="button" onClick={() => void speichereJetzt()}>
+                  Erneut speichern
+                </button>
+              ) : null}
+            </p>
+          </div>
+        </div>
+
+        <aside className="artikel__rand" aria-label="Zum Tag">
+          <dl className="fakten">
+            <div className="fakten__zeile">
+              <dt className="mono">Wörter</dt>
+              <dd>{woerter}</dd>
+            </div>
+            <div className="fakten__zeile">
+              <dt className="mono">Geändert</dt>
+              <dd>{geaendertText}</dd>
+            </div>
+            <div className="fakten__zeile">
+              <dt className="mono">Ereignis</dt>
+              <dd>{e.markiert ? e.ereignis.trim() || 'ja' : 'nein'}</dd>
+            </div>
+          </dl>
+
+          {vor || nach ? (
+            <nav className="rand__block" aria-label="Zwischen Einträgen blättern">
+              <h2 className="rand__titel mono">Einträge</h2>
+              <ul className="rueck">
+                {vor ? (
+                  <li>
+                    <a className="rueck__link" href={hrefTagebuch(vor)}>
+                      ← Vorheriger: {formatiereTagDatum(vor)}
+                    </a>
+                  </li>
+                ) : null}
+                {nach ? (
+                  <li>
+                    <a className="rueck__link" href={hrefTagebuch(nach)}>
+                      Nächster: {formatiereTagDatum(nach)} →
+                    </a>
+                  </li>
+                ) : null}
+              </ul>
+            </nav>
+          ) : null}
+        </aside>
+      </div>
+    </article>
+  );
+}

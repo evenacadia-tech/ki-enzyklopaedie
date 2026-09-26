@@ -1,8 +1,10 @@
 // Dünne Hülle: ein Fenster, das statische Frontend, das Opener-Plugin für die
-// Quellen-Links. Keine Datenbank, keine Commands — der Inhalt liegt im Frontend.
+// Quellen-Links und das Store-Plugin für das Tagebuch (eine JSON-Datei im
+// App-Datenordner). Keine Datenbank, keine Commands — der Inhalt liegt im Frontend.
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
+        .plugin(tauri_plugin_store::Builder::default().build())
         .run(tauri::generate_context!())
         .expect("Fehler beim Start der Tauri-Anwendung");
 }

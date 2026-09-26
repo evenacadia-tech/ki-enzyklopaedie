@@ -1,7 +1,7 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
-  "description": "Hauptfenster: Kern-API von Tauri + Öffnen von http(s)-Links im Standard-Browser.",
+  "description": "Hauptfenster: Kern-API von Tauri, Öffnen von http(s)-Links im Standard-Browser, Store-Plugin für die Tagebuch-Datei.",
   "windows": ["main"],
-  "permissions": ["core:default", "opener:default"]
+  "permissions": ["core:default", "opener:default", "store:default"]
 }

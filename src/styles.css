@@ -1129,6 +1129,507 @@ kbd {
   }
 }
 
+/* ── Tagebuch ─────────────────────────────────────────────────────────────── */
+
+/* Der Bereichs-Umschalter im Kopf: Links im Segment-Kleid. */
+.kopf__werkzeuge .segment a.segment__knopf {
+  padding: 0 12px;
+}
+
+/* Kalender in der Seitenleiste */
+.kalender {
+  padding: 14px 14px 12px;
+  border-bottom: 1px solid var(--linie);
+}
+
+.kalender__kopf {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.kalender__monat {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  color: var(--text-stark);
+}
+
+.kalender__pfeil {
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--linie);
+  border-radius: var(--radius-klein);
+  background: var(--grund-tief);
+  color: var(--text-2);
+  transition:
+    background var(--takt) var(--kurve),
+    color var(--takt) var(--kurve),
+    border-color var(--takt) var(--kurve);
+}
+.kalender__pfeil svg {
+  width: 12px;
+  height: 12px;
+}
+.kalender__pfeil:hover {
+  color: var(--text-stark);
+  background: var(--flaeche-3);
+  border-color: var(--linie-stark);
+}
+
+.kalender__raster {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 2px;
+}
+
+.kalender__wt {
+  padding: 2px 0 5px;
+  text-align: center;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+.kalender__wt:nth-child(6),
+.kalender__wt:nth-child(7) {
+  color: var(--leise);
+}
+
+.tag {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  height: 36px;
+  border-radius: var(--radius-klein);
+  color: var(--text-2);
+  transition:
+    background var(--takt) var(--kurve),
+    color var(--takt) var(--kurve),
+    box-shadow var(--takt) var(--kurve);
+}
+.tag:hover {
+  background: var(--flaeche-3);
+  color: var(--text);
+}
+.tag--fremd {
+  color: var(--leise);
+}
+.tag__nr {
+  font-size: 12.5px;
+  line-height: 1;
+}
+.tag__punkt {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: transparent;
+}
+.tag--eintrag .tag__punkt,
+.tag__punkt--eintrag {
+  background: var(--text-2);
+}
+.tag--ereignis {
+  color: var(--akzent);
+}
+.tag--ereignis .tag__nr {
+  font-weight: 600;
+}
+.tag--ereignis .tag__punkt,
+.tag__punkt--ereignis {
+  background: var(--akzent);
+  box-shadow: 0 0 0 2px var(--akzent-wasch);
+}
+.tag--heute {
+  box-shadow: inset 0 0 0 1px var(--linie-stark);
+}
+.tag--heute .tag__nr {
+  color: var(--text-stark);
+}
+.tag--aktiv,
+.tag--aktiv:hover {
+  background: var(--flaeche-warm);
+  color: var(--text-stark);
+  box-shadow: inset 0 0 0 1px var(--akzent);
+}
+.tag--aktiv.tag--ereignis {
+  color: var(--akzent-hell);
+}
+.tag:focus-visible {
+  outline-offset: -1px;
+  box-shadow: none;
+}
+
+.kalender__fuss {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 10px;
+}
+.kalender__legende {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  color: var(--text-3);
+}
+.kalender__legende .tag__punkt {
+  display: inline-block;
+}
+.kalender__legende .tag__punkt--ereignis {
+  margin-left: 6px;
+}
+.kalender__heute {
+  padding: 3px 7px;
+  border-radius: var(--radius-klein);
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--akzent);
+  transition:
+    background var(--takt) var(--kurve),
+    color var(--takt) var(--kurve);
+}
+.kalender__heute:hover {
+  background: var(--akzent-wasch);
+  color: var(--akzent-hell);
+}
+
+.leiste--tagebuch .leiste__liste {
+  padding-top: 10px;
+}
+.leiste--tagebuch .leiste__hinweis {
+  padding: 4px 6px 0;
+}
+
+.eintraege {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 1px;
+}
+
+.eintragzeile {
+  position: relative;
+  display: grid;
+  grid-template-columns: 60px minmax(0, 1fr);
+  gap: 10px;
+  align-items: baseline;
+  padding: 6px 8px 6px 12px;
+  border-radius: var(--radius-klein);
+  color: var(--text-2);
+  transition:
+    background var(--takt) var(--kurve),
+    color var(--takt) var(--kurve);
+}
+.eintragzeile::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 6px;
+  bottom: 6px;
+  width: 2px;
+  border-radius: 1px;
+  background: transparent;
+  transition: background var(--takt) var(--kurve);
+}
+.eintragzeile:hover {
+  background: var(--flaeche-3);
+  color: var(--text);
+}
+.eintragzeile--aktiv,
+.eintragzeile--aktiv:hover {
+  background: var(--flaeche-warm);
+  color: var(--text-stark);
+}
+.eintragzeile--aktiv::before {
+  background: var(--akzent);
+}
+.eintragzeile__datum {
+  font-size: 11px;
+  letter-spacing: 0.02em;
+  color: var(--text-3);
+  white-space: nowrap;
+}
+.eintragzeile__text {
+  font-size: 13px;
+  line-height: 1.35;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.eintragzeile__ereignis {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  margin-right: 7px;
+  border-radius: 50%;
+  background: var(--akzent);
+  vertical-align: middle;
+  transform: translateY(-1px);
+}
+
+/* Tagesansicht */
+.tagebuch {
+  max-width: 1160px;
+  margin: 0 auto;
+  padding: 44px 56px 120px;
+  animation: erscheinen var(--takt-seite) var(--kurve);
+}
+
+.tagebuch__nav {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 14px;
+  margin: 16px 0 0;
+  font-size: 11.5px;
+  letter-spacing: 0.04em;
+  color: var(--text-3);
+}
+.tagebuch__nav a {
+  padding: 3px 6px;
+  margin: 0 -6px;
+  border-radius: var(--radius-klein);
+  color: var(--text-2);
+  transition:
+    background var(--takt) var(--kurve),
+    color var(--takt) var(--kurve);
+}
+.tagebuch__nav a:hover {
+  color: var(--text-stark);
+  background: var(--flaeche-2);
+}
+.tagebuch__aktuell {
+  color: var(--akzent);
+}
+
+.marke--ereignis {
+  border-color: rgba(208, 176, 144, 0.45);
+  color: var(--akzent);
+}
+.marke--ereignis::before {
+  content: '';
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--akzent);
+}
+
+.tagebuch__fehler {
+  max-width: var(--leseweite);
+  margin: 0 0 22px;
+  padding: 12px 14px;
+  border: 1px solid rgba(224, 192, 160, 0.35);
+  border-radius: var(--radius);
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--warn);
+}
+.tagebuch__fehler .textlink {
+  font: inherit;
+}
+
+.tagebuch__raster {
+  display: grid;
+  grid-template-columns: minmax(0, var(--leseweite)) var(--rand-breite);
+  gap: 56px;
+  align-items: start;
+  font-size: var(--schrift-basis);
+}
+
+.tagebuch__inhalt {
+  min-width: 0;
+  display: grid;
+  gap: 20px;
+}
+
+.ereigniszeile {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+
+/* Schalter „Besonderes Ereignis“ */
+.schalter {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 5px 12px 5px 6px;
+  border: 1px solid var(--linie-stark);
+  border-radius: 999px;
+  font-size: 0.82em;
+  line-height: 1.3;
+  color: var(--text-2);
+  background: transparent;
+  transition:
+    border-color var(--takt) var(--kurve),
+    color var(--takt) var(--kurve),
+    background var(--takt) var(--kurve);
+}
+.schalter:hover {
+  border-color: var(--akzent);
+  color: var(--text-stark);
+}
+.schalter:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.schalter__knopf {
+  position: relative;
+  width: 30px;
+  height: 18px;
+  border-radius: 999px;
+  background: var(--flaeche-3);
+  box-shadow: inset 0 0 0 1px var(--linie-stark);
+  transition: background var(--takt) var(--kurve);
+}
+.schalter__knopf::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--text-2);
+  transition:
+    transform var(--takt) var(--kurve),
+    background var(--takt) var(--kurve);
+}
+.schalter[aria-checked='true'] {
+  border-color: var(--akzent);
+  color: var(--akzent);
+  background: var(--akzent-wasch);
+}
+.schalter[aria-checked='true'] .schalter__knopf {
+  background: var(--auswahl);
+  box-shadow: inset 0 0 0 1px var(--akzent);
+}
+.schalter[aria-checked='true'] .schalter__knopf::after {
+  transform: translateX(12px);
+  background: var(--akzent);
+}
+
+.ereignisfeld {
+  flex: 1;
+  min-width: 220px;
+  height: 34px;
+  padding: 0 10px;
+  border: 1px solid var(--linie-stark);
+  border-radius: var(--radius);
+  background: var(--grund-tief);
+  color: var(--text-stark);
+  font-size: 0.88em;
+  outline: none;
+  transition:
+    border-color var(--takt) var(--kurve),
+    box-shadow var(--takt) var(--kurve);
+}
+.ereignisfeld::placeholder {
+  color: var(--text-3);
+}
+.ereignisfeld:hover {
+  border-color: rgba(224, 208, 192, 0.32);
+}
+.ereignisfeld:focus {
+  border-color: var(--akzent);
+  box-shadow: 0 0 0 3px var(--fokus);
+}
+
+.tagebuch__label {
+  display: block;
+  margin: 0 0 8px;
+  font-size: 0.68em;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+
+.tagebuch__feld {
+  display: block;
+  width: 100%;
+  min-height: 42vh;
+  field-sizing: content;
+  padding: 16px 18px;
+  border: 1px solid var(--linie);
+  border-radius: var(--radius);
+  background: var(--flaeche);
+  color: var(--text);
+  font: inherit;
+  font-size: 1em;
+  line-height: 1.68;
+  resize: vertical;
+  outline: none;
+  text-wrap: pretty;
+  transition:
+    border-color var(--takt) var(--kurve),
+    box-shadow var(--takt) var(--kurve),
+    background var(--takt) var(--kurve);
+}
+.tagebuch__feld::placeholder {
+  color: var(--text-3);
+}
+.tagebuch__feld:hover {
+  border-color: var(--linie-stark);
+}
+.tagebuch__feld:focus {
+  border-color: var(--akzent);
+  box-shadow: 0 0 0 3px var(--fokus);
+  background: var(--flaeche-2);
+}
+.tagebuch__feld:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.tagebuch__status {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 1.4em;
+  margin: 8px 0 0;
+  font-size: 0.72em;
+  letter-spacing: 0.04em;
+  color: var(--text-3);
+}
+.tagebuch__status--fehler {
+  color: var(--warn);
+}
+.tagebuch__status button {
+  font-family: var(--mono);
+  font-size: inherit;
+  color: var(--akzent);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+@media (max-width: 1180px) {
+  .tagebuch__raster {
+    grid-template-columns: minmax(0, var(--leseweite));
+  }
+}
+
+@media (max-width: 980px) {
+  .tagebuch {
+    padding: 32px 32px 96px;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
