@@ -157,7 +157,10 @@ export function erstelleEnzyklopaedie(daten: InhaltRoh): Enzyklopaedie {
     const gruppen: Buchstabengruppe[] = [];
     for (const a of [...liste].sort(nachTitel)) {
       const erstes = a.titel.trim().charAt(0);
-      const buchstabe = /\p{L}/u.test(erstes) ? erstes.toLocaleUpperCase('de') : '#';
+      // Umlaute zum Grundbuchstaben (DIN 5007-1: Ä = A, Ü = U): die deutsche Sortierung
+      // mischt „Über…“ zwischen „Ub…“ und „Um…“, eine eigene Ü-Gruppe wäre also zerrissen.
+      const grund = erstes.normalize('NFD').replace(/\p{M}/gu, '');
+      const buchstabe = /\p{L}/u.test(grund) ? grund.toLocaleUpperCase('de') : '#';
       let g = gruppen.find((x) => x.buchstabe === buchstabe);
       if (!g) {
         g = { buchstabe, artikel: [] };

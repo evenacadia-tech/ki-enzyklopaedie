@@ -1,21 +1,25 @@
 # KI-Enzyklopädie
 
 Lese-App mit Tagebuch: quellenbelegte, quervernetzte Artikel zu KI-Consulting, EU AI Act,
-Governance & Zertifizierung, Fallbeispielen, KI-Ethik und Verhaltensforschung — und eine
-eigene Lesestrecke **Strategie — Grundlagen** für den Einstieg in Unternehmensstrategie
-und Beraterhandwerk. 85 Artikel, 232 Quellen, jede Quelle mit Abrufdatum. Dazu ein
-persönliches Tagebuch mit Kalender. Kein Quiz, kein RAG, kein Konto.
+Governance & Zertifizierung, Fallbeispielen, KI-Ethik und Verhaltensforschung — und zwei
+eigene Lesestrecken: **Strategie — Grundlagen** für den Einstieg in Unternehmensstrategie
+und Beraterhandwerk sowie **Psychologie für Strategie und Beratung** (Entscheiden,
+Gespräch, Organisation, Markt). 111 Artikel, 348 Quellen, jede Quelle mit Abrufdatum.
+Dazu ein persönliches Tagebuch mit Kalender. Kein Quiz, kein RAG, kein Konto.
 
 Zwei Inhaltsquellen:
 
 - **Akademie-Export** (56 Artikel): der Enzyklopädie-Bereich der Akademie-App
   (`evenacadia-tech/probetag-akademie`), exportiert über `scripts/export-aus-akademie.mts`
   nach `src/inhalt/artikel.json`.
-- **Eigene Sammlungen** (29 Artikel): von Hand gepflegte Artikel unter
-  `src/inhalt/sammlungen/`, derzeit `strategie/` in fünf Blöcken (Was Strategie ist ·
+- **Eigene Sammlungen** (55 Artikel): von Hand gepflegte Artikel unter
+  `src/inhalt/sammlungen/`. `strategie/` (29 Artikel) in fünf Blöcken (Was Strategie ist ·
   Umfeld und Branche analysieren · Geschäftsmodell und Kunde · Umsetzen und messen ·
-  Beraterhandwerk). Jeder Artikel: 3–4 Abschnitte, 2–5 geprüfte Primärquellen, ein
-  Beispiel aus dem Alltag einer kleinen KI-Beratung, ein Abschnitt „Grenzen und Kritik“.
+  Beraterhandwerk); `psychologie/` (26 Artikel) in vier Blöcken (Denken und Entscheiden ·
+  Menschen im Gespräch · Gruppen, Führung, Veränderung · Kunde, Markt, Technikakzeptanz,
+  Abschluss „Befunde richtig lesen“). Jeder Artikel: 3–4 Abschnitte, 2–5 geprüfte
+  Primärquellen, ein Beispiel aus dem Alltag einer kleinen KI-Beratung, ein Abschnitt
+  „Grenzen und Kritik“ — ein Test (`eigene Sammlungen (Autorenvertrag)`) erzwingt das.
 
 Beide Quellen laufen durch denselben Load-Guard; Querverweise zeigen in beide Richtungen.
 
@@ -34,6 +38,8 @@ Beide Quellen laufen durch denselben Load-Guard; Querverweise zeigen in beide Ri
 ![Tagebuch](docs/bilder/preview-tagebuch.png)
 
 ![Strategie-Artikel](docs/bilder/preview-artikel-strategie.png)
+
+![Psychologie-Artikel](docs/bilder/preview-artikel-psychologie.png)
 
 ## Tagebuch: wo die Daten liegen
 
@@ -83,11 +89,14 @@ npm test
 Ohne Pfad wird `../Projekte/Vorbereitung Probetag Avarno` angenommen. Der Export
 schreibt `src/inhalt/artikel.json` mit `meta.quelle` = Akademie-Commit.
 
-**Eigene Sammlungen:** Artikel direkt in `src/inhalt/sammlungen/strategie/block-*.ts`
+**Eigene Sammlungen:** Artikel direkt in `src/inhalt/sammlungen/<sammlung>/block-*.ts`
 schreiben (Typ `EigenerArtikel` in `src/inhalt/typen.ts`; nur `abschnitte`, der flache
 Rumpf wird abgeleitet), dann `npm test`. Der Load-Guard in `src/inhalt/index.ts` bricht
 laut bei toten Querverweisen, unbelegten Artikeln oder unbekannten Themen/Sammlungen —
 Build und Tests schlagen dann fehl, statt dass die Oberfläche ins Leere zeigt.
+Zeitschriftenquellen als DOI-Link (`https://doi.org/…`) angeben; die Metadaten lassen
+sich über die Crossref-API (`https://api.crossref.org/works/<DOI>`) prüfen, auch wenn die
+Verlagsseite Abrufe per Skript blockiert.
 
 ## Aufbau
 

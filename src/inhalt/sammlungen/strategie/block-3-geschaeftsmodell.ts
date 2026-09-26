@@ -306,6 +306,8 @@ export const block3: EigenerArtikel[] = [
       'build-vs-buy',
       'poc-pilot-skalierung',
       'change-management',
+      'algorithmus-aversion',
+      'technikakzeptanz-tam-utaut',
       'ki-kompetenz',
       'business-model-canvas',
     ],

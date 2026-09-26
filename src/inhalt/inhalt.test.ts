@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { GRUNDLAGEN_ID, enzyklopaedie, erstelleEnzyklopaedie } from './index';
+import { eigeneSammlungen } from './sammlungen';
 import type { InhaltRoh } from './typen';
 
 // Der ECHTE Bestand muss seinen Vertrag halten — und der Load-Guard muss jede
@@ -98,6 +99,30 @@ describe('erstelleEnzyklopaedie (Load-Guard)', () => {
     const d = basis();
     d.artikel[1].abschnitte = [];
     expect(erstelleEnzyklopaedie(d).nachId('zwei')?.abschnitte).toBeUndefined();
+  });
+
+  it('sortiert Umlaut-Titel im A–Z-Register unter den Grundbuchstaben', () => {
+    const d = basis();
+    d.artikel[0].titel = 'Übersicht';
+    d.artikel[1].titel = 'Umsetzung';
+    const gruppen = erstelleEnzyklopaedie(d).alphabetisch();
+    expect(gruppen.map((g) => g.buchstabe)).toEqual(['U']);
+    expect(gruppen[0].artikel.map((a) => a.titel)).toEqual(['Übersicht', 'Umsetzung']);
+  });
+});
+
+describe('eigene Sammlungen (Autorenvertrag)', () => {
+  it('hat je Artikel 2–5 Quellen, mindestens drei Abschnitte und einen kritischen Schluss', () => {
+    for (const s of eigeneSammlungen) {
+      expect(s.artikel.length).toBeGreaterThan(0);
+      for (const a of s.artikel) {
+        expect(a.quellen.length, `${a.id}: Quellen`).toBeGreaterThanOrEqual(2);
+        expect(a.quellen.length, `${a.id}: Quellen`).toBeLessThanOrEqual(5);
+        expect(a.abschnitte.length, `${a.id}: Abschnitte`).toBeGreaterThanOrEqual(3);
+        expect(a.abschnitte.at(-1)?.titel, `${a.id}: Schlussabschnitt`).toMatch(/^(Grenzen und Kritik|Typische Fehler)$/);
+        expect(a.sieheAuch.length, `${a.id}: sieheAuch`).toBeGreaterThan(0);
+      }
+    }
   });
 });
 

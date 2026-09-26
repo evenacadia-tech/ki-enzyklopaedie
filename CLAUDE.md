@@ -36,12 +36,21 @@ Zwei Quellen, ein Load-Guard (`src/inhalt/index.ts` → `vereinige` in
   Akademie-Repo auf diesem Rechner: `C:\Users\phili\Projekte\Vorbereitung Probetag Avarno`
   (GitHub `evenacadia-tech/probetag-akademie`). Dort `npm ci`, bevor der Export läuft.
 - `src/inhalt/sammlungen/<sammlung>/` sind EIGENE, von Hand gepflegte Sammlungen
-  (derzeit `strategie/`, fünf Block-Dateien in Lesereihenfolge). Autoren schreiben nur
-  `abschnitte`; `absaetze` und `sammlung` leitet `vereinige` ab. Warum nicht im
-  Akademie-Repo: dort erzwingt ein Pack Karteikarten-Format, Quiz, Konzeptgraph und ein
-  eingefrorenes RAG-Eval-Gate, das ein neues Default-Pack bricht — für reine Lese-Prosa
-  unnötig. Regeln je Artikel: 2–5 geprüfte Primärquellen mit Abrufdatum, keine Zahl ohne
-  Quelle, letzter Abschnitt „Grenzen und Kritik“/„Typische Fehler“.
+  (`strategie/`, fünf Block-Dateien; `psychologie/`, vier Block-Dateien — User-Entscheid
+  26.09.2026: Strategiebereich mit Fokus Psychologie ausbauen, alle vier Blöcke gleich
+  gewichtet; jeweils in Lesereihenfolge). Autoren schreiben nur `abschnitte`; `absaetze`
+  und `sammlung` leitet `vereinige` ab. Warum nicht im Akademie-Repo: dort erzwingt ein
+  Pack Karteikarten-Format, Quiz, Konzeptgraph und ein eingefrorenes RAG-Eval-Gate, das
+  ein neues Default-Pack bricht — für reine Lese-Prosa unnötig. Regeln je Artikel: 2–5
+  geprüfte Primärquellen mit Abrufdatum, keine Zahl ohne Quelle, mindestens drei
+  Abschnitte, letzter Abschnitt „Grenzen und Kritik“/„Typische Fehler“ — der Test
+  „eigene Sammlungen (Autorenvertrag)“ in `src/inhalt/inhalt.test.ts` erzwingt das.
+- Quellen prüfen: Zeitschriftenartikel als DOI-Link (`https://doi.org/…`) angeben und
+  die Metadaten über `https://api.crossref.org/works/<DOI>` bestätigen (Autor, Titel,
+  Jahr, Band, Seiten); Verlags-/HBR-Seiten per Abruf mit Browser-User-Agent. Bekannt
+  blockiert (403/Cloudflare): mckinsey.com, harpercollins.com, us.macmillan.com,
+  simonandschuster.com, utb.de; Google re:Work-Guides sind 404. Ersatz: penguin.co.uk,
+  influenceatwork.com, Crossref-DOI.
 - Artikel-IDs sind Deep-Link-Ziele (`#/artikel/<id>`) — nie umbenennen. Querverweise
   dürfen in beide Richtungen zwischen Akademie- und eigenen Artikeln zeigen.
 - Der Load-Guard wirft bei totem Querverweis, unbelegtem Artikel, unbekanntem

@@ -1,8 +1,9 @@
 import type { ArtikelRoh, EigeneSammlung, InhaltRoh, Thema } from '../typen';
+import { psychologie } from './psychologie';
 import { strategie } from './strategie';
 
 /** Alle eigenen Sammlungen in Anzeige-Reihenfolge (nach den Akademie-Sammlungen). */
-export const eigeneSammlungen: readonly EigeneSammlung[] = [strategie];
+export const eigeneSammlungen: readonly EigeneSammlung[] = [strategie, psychologie];
 
 const ISO_DATUM = /^\d{4}-\d{2}-\d{2}$/;
 
