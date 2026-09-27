@@ -9,7 +9,8 @@
 //     Webseite bekommt keine Vorschau, fremde Kennungen und Dateinamen lehnt die
 //     Rust-Seite ab.
 // Dazu Screenshots (Start, Artikel, Tagebuch, Dokumente). Alle Dateien des Nutzers im
-// App-Datenordner werden vorher gesichert und danach byte-genau zurückgespielt; was der
+// App-Datenordner werden vorher gesichert, beiseitegelegt (der Beweis läuft mit leerem
+// Bestand, in den Bildern steht nichts vom Nutzer) und danach byte-genau zurückgespielt; was der
 // Beweis in dokumente/ anlegt, räumt er wieder weg.
 //
 //   npm run tauri:build && npm run nativ:beweis [-- <ausgabe-ordner>]
@@ -66,12 +67,29 @@ const pruefe = (bedingung, text) => {
   if (!bedingung) throw new Error(text);
 };
 
-// 1. Bestand des Nutzers sichern: die vier JSON-Dateien und die Liste in dokumente/.
+// 1. Bestand des Nutzers sichern und beiseitelegen: die vier JSON-Dateien und die Liste
+//    in dokumente/. Der Beweis läuft mit LEEREM Tagebuch und leerem Verzeichnis — sonst
+//    stünden echte Einträge des Nutzers in den Screenshots, die ins Repo gehen.
+// Liegt noch die Sicherung eines abgebrochenen Laufs da, enthält SIE den echten Bestand.
+// Dann nichts anfassen: ein neuer Lauf würde sie mit Beweisdaten überschreiben.
+const liegengeblieben = GESICHERT.map((name) => join(appData, name + '.beweis-sicherung')).filter((p) => existsSync(p));
+if (liegengeblieben.length > 0) {
+  console.error(
+    'Sicherung eines abgebrochenen Laufs gefunden:\n  ' +
+      liegengeblieben.join('\n  ') +
+      '\nSie enthält den Bestand des Nutzers von vor jenem Lauf. Erst mit der Datei ohne die Endung\n' +
+      '„.beweis-sicherung“ vergleichen, die richtige Fassung behalten, dann die Sicherung löschen.',
+  );
+  process.exit(1);
+}
 const hatte = new Map();
 for (const name of GESICHERT) {
   const pfad = join(appData, name);
   hatte.set(name, existsSync(pfad));
-  if (hatte.get(name)) copyFileSync(pfad, pfad + '.beweis-sicherung');
+  if (hatte.get(name)) {
+    copyFileSync(pfad, pfad + '.beweis-sicherung');
+    rmSync(pfad);
+  }
 }
 const hatteOrdner = existsSync(ordner);
 const vorher = new Set(hatteOrdner ? readdirSync(ordner) : []);

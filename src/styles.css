@@ -1533,11 +1533,24 @@ a.lesestrecke__link:hover {
   --ereignis: var(--farbe-altrosa);
 }
 
+/* Ein markierter Tag zeigt seine Farbe dreifach: Zahl, Umrandung und ein leichter Ton in
+   der Zelle — der Punkt allein war zu dezent (User 27.09.2026). Zahl auf Ton bleibt in
+   allen fünf Farben über 4,5:1. */
 .tag--ereignis {
   color: var(--ereignis, var(--akzent));
+  background: color-mix(in srgb, var(--ereignis, var(--akzent)) 12%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ereignis, var(--akzent)) 50%, transparent);
+}
+.tag--ereignis:hover {
+  color: var(--ereignis, var(--akzent));
+  background: color-mix(in srgb, var(--ereignis, var(--akzent)) 18%, transparent);
 }
 .tag--ereignis .tag__nr {
   font-weight: 600;
+}
+/* Markierte Tage der Nachbarmonate treten zurück wie die übrigen. */
+.tag--fremd.tag--ereignis {
+  opacity: 0.5;
 }
 .tag--ereignis .tag__punkt,
 .tag__punkt--ereignis {
@@ -1555,14 +1568,29 @@ a.lesestrecke__link:hover {
 .tag--heute .tag__nr {
   color: var(--text-stark);
 }
+/* Heute UND markiert: die Umrandung trägt die Farbe, die Zahl bleibt heller als an
+   anderen markierten Tagen — so ist „heute“ weiter zu erkennen. */
+.tag--heute.tag--ereignis {
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ereignis, var(--akzent)) 70%, transparent);
+}
+.tag--heute.tag--ereignis .tag__nr {
+  color: color-mix(in srgb, var(--ereignis, var(--akzent)) 62%, var(--text-stark));
+}
 .tag--aktiv,
 .tag--aktiv:hover {
   background: var(--flaeche-warm);
   color: var(--text-stark);
   box-shadow: inset 0 0 0 1px var(--akzent);
 }
-.tag--aktiv.tag--ereignis {
-  color: color-mix(in srgb, var(--ereignis, var(--akzent)) 78%, #fff8ec);
+/* Der gewählte Tag, wenn er markiert ist: volle Farbe in der Umrandung (mit Schein nach
+   außen), kräftigerer Ton, Zahl in der Farbe. */
+.tag--aktiv.tag--ereignis,
+.tag--aktiv.tag--ereignis:hover {
+  color: color-mix(in srgb, var(--ereignis, var(--akzent)) 86%, var(--text-stark));
+  background: color-mix(in srgb, var(--ereignis, var(--akzent)) 24%, var(--flaeche-warm));
+  box-shadow:
+    inset 0 0 0 1px var(--ereignis, var(--akzent)),
+    0 0 0 1px color-mix(in srgb, var(--ereignis, var(--akzent)) 38%, transparent);
 }
 .tag:focus-visible {
   outline-offset: -1px;
@@ -1577,6 +1605,17 @@ a.lesestrecke__link:hover {
   box-shadow:
     inset 0 0 0 1px var(--akzent),
     inset 0 -2px 0 var(--akzent);
+}
+/* Treffer an einem markierten Tag: die goldene Unterkante kommt dazu, die Farbe bleibt. */
+.tag--treffer.tag--ereignis {
+  box-shadow:
+    inset 0 -2px 0 var(--akzent),
+    inset 0 0 0 1px color-mix(in srgb, var(--ereignis, var(--akzent)) 50%, transparent);
+}
+.tag--treffer.tag--aktiv.tag--ereignis {
+  box-shadow:
+    inset 0 -2px 0 var(--akzent),
+    inset 0 0 0 1px var(--ereignis, var(--akzent));
 }
 .tag--gedimmt {
   opacity: 0.45;

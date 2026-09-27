@@ -99,12 +99,27 @@ const vorab = helfer('fenster');
 const ALT = vorab.griffe.join(',');
 const [bildBreite, bildHoehe] = vorab.bildschirm;
 
-// Bestand des Nutzers sichern.
+// Bestand des Nutzers sichern und beiseitelegen — der Lauf beginnt mit leerem Tagebuch
+// und leerem Verzeichnis. Liegt noch die Sicherung eines abgebrochenen Laufs da, enthält
+// SIE den echten Bestand: dann nichts anfassen.
+const liegengeblieben = GESICHERT.map((name) => join(appData, name + '.os-sicherung')).filter((p) => existsSync(p));
+if (liegengeblieben.length > 0) {
+  console.error(
+    'Sicherung eines abgebrochenen Laufs gefunden:\n  ' +
+      liegengeblieben.join('\n  ') +
+      '\nSie enthält den Bestand des Nutzers von vor jenem Lauf. Erst mit der Datei ohne die Endung\n' +
+      '„.os-sicherung“ vergleichen, die richtige Fassung behalten, dann die Sicherung löschen.',
+  );
+  process.exit(1);
+}
 const hatte = new Map();
 for (const name of GESICHERT) {
   const pfad = join(appData, name);
   hatte.set(name, existsSync(pfad));
-  if (hatte.get(name)) copyFileSync(pfad, pfad + '.os-sicherung');
+  if (hatte.get(name)) {
+    copyFileSync(pfad, pfad + '.os-sicherung');
+    rmSync(pfad);
+  }
 }
 const hatteOrdner = existsSync(ordner);
 const vorher = new Set(hatteOrdner ? readdirSync(ordner) : []);

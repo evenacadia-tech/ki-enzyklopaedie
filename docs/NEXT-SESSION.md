@@ -19,6 +19,9 @@ Einzelheiten stehen in `README.md` (Bedienung, „Dokumente: wo die Daten liegen
 
 Technische Entscheidungen, jeweils mit dem, was der User davon merkt:
 
+- **Farbe im Kalender deutlich** (Rückmeldung des Users am 27.09.2026: nur der Punkt war
+  „zu dezent“): ein markierter Tag trägt die Farbe an Zahl, Umrandung und als Ton in der
+  Zelle, der gewählte Tag kräftiger. Auch während der Suche bleibt die Farbe stehen.
 - **Palette leicht nachgeschärft.** Startwerte aus der Spezifikation lagen teils zu nah
   beieinander (Kupfer/Altrosa, Schiefer/Altrosa). Endwerte in `src/styles.css`
   (`--farbe-*`): alle gedeckt, alle gut lesbar, im Kalender als 5-px-Punkt unterscheidbar.
@@ -64,6 +67,10 @@ SKALIERUNG=1.5 npm run os:beweis   besteht — rechnet wie 150 % Bildschirmskali
   nur starten, wenn niemand am Rechner arbeitet.
 - **Bilder:** `docs/bilder/preview-*.png` (Browser) und `nativ-*.png` (echtes Fenster), alle
   vom 27.09.2026 mit dreiteiliger Kopfzeile.
+- **Beide Beweise laufen mit leerem Bestand.** Sie legen Tagebuch und Verzeichnis des
+  Nutzers beiseite und spielen sie danach zurück — in den Bildern steht nichts vom Nutzer.
+  Auf diesem Rechner liegt seit dem 27.09.2026 ein echter Eintrag; er war nach jedem Lauf
+  unverändert (Größe und Zeitstempel geprüft).
 
 ## Erster Schritt auf dem Laptop
 

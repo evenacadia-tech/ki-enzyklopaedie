@@ -35,7 +35,7 @@ Beide Quellen laufen durch denselben Load-Guard; Querverweise zeigen in beide Ri
 | Lesestrecke | Artikel der Sammlungen (Strategie, Psychologie, Akademie-Sammlungen) haben am Ende **Zurück / Weiter** in Lesereihenfolge; die Randspalte zeigt „Lesestrecke 3 von 29“ |
 | Lesefortschritt | „Als gelesen markieren“ am Artikelende (oder „Weiter“ klicken) setzt einen Haken im Register und die Marke „Gelesen“; die Startseite zeigt je Lesestrecke „Weiterlesen“ mit dem nächsten ungelesenen Artikel. Wird lokal gemerkt |
 | Tagebuch | Tag im Kalender anklicken, schreiben — gespeichert wird von selbst (500 ms nach der letzten Änderung, sofort beim Verlassen); `Ctrl+S` erzwingt es. „Besonderes Ereignis“ markiert den Tag und gibt ihm eine Bezeichnung; das nächste Ereignis ab heute steht unter dem Kalender. Die Randspalte zeigt den vorherigen Eintrag als Rückblick |
-| Farben | Ein markierter Tag trägt eine von fünf Farben (Gold, Kupfer, Salbei, Schiefer, Altrosa) — wählbar unter dem Schalter, ohne Legende: was eine Farbe bedeutet, legt man selbst fest. Zahl und Punkt im Kalender, die Punkte in den Listen und die Marke „Ereignis“ tragen die Farbe. Über „Markierte Tage“ filtert ein Punkt je benutzter Farbe |
+| Farben | Ein markierter Tag trägt eine von fünf Farben (Gold, Kupfer, Salbei, Schiefer, Altrosa) — wählbar unter dem Schalter, ohne Legende: was eine Farbe bedeutet, legt man selbst fest. Im Kalender trägt der Tag die Farbe dreifach — Zahl, Umrandung und ein leichter Ton in der Zelle, dazu der Punkt; am gewählten Tag kräftiger. Die Punkte in den Listen und die Marke „Ereignis“ tragen sie ebenfalls. Über „Markierte Tage“ filtert ein Punkt je benutzter Farbe |
 | Anhänge | Unter dem Text jedes Tages: **Datei hinzufügen …** oder Dateien aus dem Explorer auf die Seite ziehen. Die App legt eine Kopie an; das Original bleibt, wo es ist. Ein Tag mit Anhängen trägt im Kalender und in der Monatsliste eine Büroklammer |
 | Dokumente | Drei Abteilungen: **Zertifikate**, **Wichtige Dokumente** (Dateien über den Knopf oder durch Ziehen auf die Abteilung) und **Aus dem Tagebuch** (alle Anhänge, nach Tagen, mit Link zum Tag). Ein Klick auf den Namen öffnet das Dokument: Vorschau, Anzeigename, Notiz, Abteilung, **Öffnen** (Standardprogramm), **Im Ordner zeigen**, **Entfernen …** |
 | Vorschau | Bilder und PDF zeigt die App selbst; alles andere (Word, Excel, Text …) öffnet das Standardprogramm. Ausführbare Dateien (`.exe`, `.bat` …) startet die App nicht; eine Datei, die nur `.pdf` heißt, aber keines ist, bekommt keine Vorschau |
@@ -135,8 +135,8 @@ npm run os:beweis    # zieht mit echter Maus Dateien aus dem Explorer in die App
 
 Voraussetzungen für die native App: Rust-Toolchain (≥ 1.77) und die Tauri-2-
 Voraussetzungen für Windows (WebView2 ist auf Windows 11 vorhanden). Der native Beweis
-sichert `tagebuch.json`, `dokumente.json` und beide Sicherungskopien vorher, spielt sie
-danach byte-genau zurück und entfernt aus `dokumente\`, was er selbst angelegt hat. Vor dem
+legt `tagebuch.json`, `dokumente.json` und beide Sicherungskopien vorher beiseite (er läuft
+mit leerem Bestand, in den Bildern steht nichts Eigenes), spielt sie danach byte-genau zurück und entfernt aus `dokumente\`, was er selbst angelegt hat. Vor dem
 Lauf darf keine Instanz der App offen sein. `BEWEIS_OEFFNEN=1` prüft zusätzlich „Öffnen“
 und „Im Ordner zeigen“ (startet das Standardprogramm und den Explorer).
 

@@ -96,9 +96,13 @@ Zwei Quellen, ein Load-Guard (`src/inhalt/index.ts` → `vereinige` in
 - Farbe der Markierung: Feld `farbe` je Eintrag (`FARBEN` in `modell.ts`: gold, kupfer,
   salbei, schiefer, altrosa; fehlend/unbekannt → gold, `version` bleibt 1). Bedeutung nur
   bei `markiert`. Oberfläche: Attribut `data-farbe` → CSS-Variable `--ereignis`
-  (Tokens `--farbe-*` in `src/styles.css`). Keine Legende, keine Namen in der Oberfläche —
+  (Tokens `--farbe-*` in `src/styles.css`). Im Kalender zeigt ein markierter Tag die
+  Farbe an Zahl, Umrandung UND als Ton in der Zelle, der gewählte Tag kräftiger
+  (User 27.09.2026: nur der Punkt war „zu dezent“) — nicht wieder auf den Punkt
+  zurückbauen. Keine Legende, keine Namen in der Oberfläche —
   Namen nur als `aria-label` und im Export. Palette geprüft: alle Töne ≥ 5,8:1 gegen
-  `#101010`/`#1a1714`, kleinster Abstand untereinander 0,08 (OKLab); beim Ändern neu rechnen.
+  `#101010`/`#1a1714`, kleinster Abstand untereinander 0,08 (OKLab); Zahl auf getönter
+  Zelle in allen Zuständen ≥ 4,5:1; beim Ändern neu rechnen.
 - Routen `#/tagebuch` (heute) und `#/tagebuch/<YYYY-MM-DD>`; Tage sind Links.
 - Konventionen ohne neues Datenfeld: Zeilen mit „?“ am Anfang sind offene Fragen
   (`fragenImText`/`offeneFragen` in `modell.ts`); der Kalender zeigt ISO-Kalenderwochen
@@ -171,6 +175,13 @@ Zwei Quellen, ein Load-Guard (`src/inhalt/index.ts` → `vereinige` in
 - Bash-Heredocs mit langen TS-Dateien scheitern hier gelegentlich am Shell-Parser;
   mehrzeilige Quelltexte über das Write-Tool schreiben.
 - `.gitignore` deckt `src-tauri/target` und `src-tauri/gen/schemas` (beides generiert).
+- `nativ:beweis` und `os:beweis` laufen im ECHTEN App-Datenordner des Rechners. Sie legen
+  den Bestand des Nutzers vorher beiseite (`*.beweis-sicherung` / `*.os-sicherung`),
+  starten mit leerem Tagebuch und spielen danach byte-genau zurück — so steht nichts vom
+  Nutzer in den Bildern unter `docs/bilder/`, die ins Repo gehen. Findet ein Lauf eine
+  liegengebliebene Sicherung, bricht er ab: sie enthält den echten Bestand. Nach jedem
+  Lauf prüfen, dass Dateien und Zeitstempel im Ordner wie vorher sind; Bilder vor dem
+  Commit ansehen.
 - jsdom führt einen Klick auf einen Link (`<a href="#/…">`) erst in einer späteren Task
   aus. Folgt danach ein weiterer Test, fällt die Navigation in DIESEN und wechselt
   mittendrin die Route. `frisch()` in `src/App.test.tsx` wartet deshalb vor jedem Test
