@@ -1,7 +1,7 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
-  "description": "Hauptfenster: Kern-API von Tauri, Öffnen von http(s)-Links im Standard-Browser, Speichern-Dialog für den Tagebuch-Export.",
+  "description": "Hauptfenster: Kern-API von Tauri (auch Drag-and-drop-Ereignisse), Öffnen von http(s)-Links im Standard-Browser, Dialoge für Export, Dateiauswahl und Rückfrage. Dokumente öffnet die Rust-Seite über eigene Commands, deshalb keine Pfad-Freigabe für den Opener.",
   "windows": ["main"],
   "permissions": ["core:default", "opener:default", "dialog:default"]
 }

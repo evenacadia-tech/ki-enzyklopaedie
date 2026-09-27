@@ -2255,7 +2255,8 @@ a.lesestrecke__link:hover {
 .tagebuch__feld {
   display: block;
   width: 100%;
-  min-height: 42vh;
+  /* Niedrig genug, dass die Anhänge darunter ohne Scrollen zu sehen sind; das Feld wächst mit dem Text. */
+  min-height: 34vh;
   field-sizing: content;
   padding: 16px 18px;
   border: 1px solid var(--linie);
@@ -2319,6 +2320,594 @@ a.lesestrecke__link:hover {
 @media (max-width: 980px) {
   .tagebuch {
     padding: 32px 32px 96px;
+  }
+}
+
+/* ── Dokumente ────────────────────────────────────────────────────────────── */
+
+/* Knopf: eine Form für alle Aktionen (Öffnen, Hinzufügen, Entfernen). */
+.knopf {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  height: 32px;
+  padding: 0 13px;
+  border: 1px solid var(--linie-stark);
+  border-radius: var(--radius);
+  background: var(--grund-tief);
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  color: var(--text);
+  white-space: nowrap;
+  transition:
+    border-color var(--takt) var(--kurve),
+    background var(--takt) var(--kurve),
+    color var(--takt) var(--kurve);
+}
+.knopf:hover:not(:disabled) {
+  border-color: var(--akzent);
+  background: var(--flaeche-2);
+  color: var(--text-stark);
+}
+.knopf:active:not(:disabled) {
+  transform: translateY(0.5px);
+}
+.knopf:disabled {
+  color: var(--text-3);
+  border-color: var(--linie);
+  cursor: default;
+}
+.knopf--haupt {
+  border-color: rgba(208, 176, 144, 0.55);
+  background: var(--akzent-wasch);
+  color: var(--akzent-hell);
+}
+.knopf--haupt:hover:not(:disabled) {
+  background: rgba(208, 176, 144, 0.22);
+  color: var(--text-stark);
+}
+.knopf--haupt:disabled {
+  background: transparent;
+}
+/* Entfernen: in Ruhe zurückhaltend, erst unter dem Zeiger warnend. */
+.knopf--warn {
+  border-color: var(--linie);
+  color: var(--text-2);
+}
+.knopf--warn:hover:not(:disabled) {
+  border-color: var(--warn);
+  color: var(--warn);
+  background: rgba(224, 192, 160, 0.08);
+}
+.knopf--klein {
+  height: 26px;
+  padding: 0 9px;
+  font-size: 12px;
+  border-radius: var(--radius-klein);
+}
+.knopf__icon {
+  width: 13px;
+  height: 13px;
+  flex: none;
+}
+
+/* Dateityp-Marke: „PDF“, „DOCX“ … */
+.typmarke {
+  display: inline-grid;
+  place-items: center;
+  min-width: 42px;
+  height: 20px;
+  padding: 0 6px;
+  border: 1px solid var(--linie-stark);
+  border-radius: 3px;
+  background: var(--grund-tief);
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  color: var(--text-2);
+  white-space: nowrap;
+}
+.pfad .typmarke {
+  letter-spacing: 0.06em;
+}
+
+.pfad__link {
+  border-radius: var(--radius-klein);
+  transition: color var(--takt) var(--kurve);
+}
+.pfad__link:hover {
+  color: var(--akzent);
+}
+
+/* Meldung einer Aktion, die nicht gelang — schließbar. */
+.hinweisband {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  max-width: calc(var(--leseweite) + var(--rand-breite) + 56px);
+  margin: 0 0 22px;
+  padding: 10px 10px 10px 14px;
+  border: 1px solid rgba(224, 192, 160, 0.35);
+  border-radius: var(--radius);
+  background: var(--flaeche-warm);
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--warn);
+}
+.hinweisband span {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.hinweisband__zu {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: var(--radius-klein);
+  color: var(--text-2);
+}
+.hinweisband__zu svg {
+  width: 10px;
+  height: 10px;
+}
+.hinweisband__zu:hover {
+  color: var(--text-stark);
+  background: var(--flaeche-3);
+}
+
+/* Seitenleiste */
+.leiste--dokumente .leiste__liste {
+  padding-top: 2px;
+}
+.eintrag--uebersicht {
+  margin-bottom: 14px;
+  font-weight: 500;
+}
+/* Namen bleiben einzeilig und werden gekürzt — die Spalte darf nicht mit dem Inhalt wachsen. */
+.leiste--dokumente .abteilung__liste {
+  grid-template-columns: minmax(0, 1fr);
+}
+.leiste--dokumente .leiste__liste {
+  overflow-x: hidden;
+}
+.eintrag--dokument {
+  align-items: baseline;
+}
+.eintrag--dokument .eintrag__titel {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.eintrag__typ,
+.eintrag__tag {
+  flex: none;
+  font-size: 10px;
+  letter-spacing: 0.05em;
+  color: var(--text-3);
+}
+.eintrag__tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+.eintrag__klammer {
+  width: 10px;
+  height: 10px;
+}
+.leiste__hinweis--eingerueckt {
+  padding: 2px 6px 0;
+}
+
+/* Übersicht: drei Abteilungen */
+.dokumente,
+.dokument {
+  max-width: 1160px;
+  margin: 0 auto;
+  padding: 44px 56px 120px;
+  animation: erscheinen var(--takt-seite) var(--kurve);
+}
+
+.dokabteilung {
+  position: relative;
+  max-width: 980px;
+  padding: 18px 20px 12px;
+  border: 1px solid var(--linie);
+  border-radius: var(--radius);
+  background: var(--flaeche);
+  transition:
+    border-color var(--takt) var(--kurve),
+    background var(--takt) var(--kurve),
+    box-shadow var(--takt) var(--kurve);
+}
+.dokabteilung + .dokabteilung {
+  margin-top: 18px;
+}
+/* Eine Datei wird darüber gezogen. */
+.dokabteilung--ablage {
+  border-color: var(--akzent);
+  background: var(--flaeche-warm);
+  box-shadow: 0 0 0 3px var(--fokus);
+}
+
+.dokabteilung__kopf {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 32px;
+  margin-bottom: 8px;
+}
+.dokabteilung__titel {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  color: var(--text-stark);
+}
+.dokabteilung__kopf .abteilung__zahl {
+  font-size: 12px;
+}
+.dokabteilung__kopf .knopf {
+  margin-left: auto;
+}
+.dokabteilung__leer {
+  max-width: 62ch;
+  margin: 2px 0 8px;
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: var(--text-3);
+  text-wrap: pretty;
+}
+
+.dokliste {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.dokzeile {
+  display: grid;
+  grid-template-columns: 46px minmax(0, 1fr) auto auto;
+  gap: 4px 14px;
+  align-items: center;
+  padding: 10px 0;
+  border-top: 1px solid var(--linie);
+}
+.dokzeile .typmarke {
+  justify-self: start;
+}
+.dokzeile__haupt {
+  min-width: 0;
+}
+.dokzeile__name {
+  display: inline-block;
+  max-width: 100%;
+  padding: 1px 4px;
+  margin: -1px -4px;
+  border-radius: var(--radius-klein);
+  font-size: 14.5px;
+  font-weight: 500;
+  line-height: 1.35;
+  color: var(--text-stark);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  vertical-align: bottom;
+  text-decoration: underline;
+  text-decoration-color: transparent;
+  text-underline-offset: 3px;
+  transition:
+    color var(--takt) var(--kurve),
+    text-decoration-color var(--takt) var(--kurve);
+}
+.dokzeile__name:hover {
+  color: var(--akzent-hell);
+  text-decoration-color: var(--akzent);
+}
+.dokzeile__notiz {
+  margin: 2px 0 0;
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: var(--text-2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.dokzeile__meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 14px;
+  font-size: 11px;
+  letter-spacing: 0.02em;
+  color: var(--text-3);
+  white-space: nowrap;
+}
+.dokzeile__tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 5px;
+  margin: -2px -5px;
+  border-radius: var(--radius-klein);
+  color: var(--text-2);
+  transition:
+    color var(--takt) var(--kurve),
+    background var(--takt) var(--kurve);
+}
+.dokzeile__tag:hover {
+  color: var(--akzent-hell);
+  background: var(--akzent-wasch);
+}
+.dokzeile__klammer {
+  width: 11px;
+  height: 11px;
+}
+
+.doktag + .doktag {
+  margin-top: 10px;
+}
+.doktag__titel {
+  margin: 10px 0 0;
+  padding: 0 0 6px;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--akzent);
+}
+.doktag__titel a {
+  padding: 2px 5px;
+  margin: -2px -5px;
+  border-radius: var(--radius-klein);
+  transition:
+    color var(--takt) var(--kurve),
+    background var(--takt) var(--kurve);
+}
+.doktag__titel a:hover {
+  color: var(--akzent-hell);
+  background: var(--akzent-wasch);
+}
+
+/* Ein Dokument */
+.dokument__titel {
+  max-width: 34ch;
+  overflow-wrap: anywhere;
+}
+.dokument__aktionen {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 20px;
+}
+.dokument__aktionen .knopf--warn {
+  margin-left: 12px;
+}
+
+.ereignisfeld--voll {
+  display: block;
+  width: 100%;
+  font-size: 1em;
+  height: 40px;
+  padding: 0 14px;
+}
+.ereignisfeld:disabled {
+  opacity: 0.6;
+}
+.feldhinweis {
+  margin: 6px 0 0;
+  font-size: 0.72em;
+  line-height: 1.45;
+  color: var(--text-3);
+}
+.tagebuch__feld--notiz {
+  min-height: 132px;
+}
+.fakten__datei {
+  font-size: 11px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+  color: var(--text-2);
+}
+
+/* Vorschau: Bild oder PDF in der App, sonst eine ruhige Kachel. */
+.vorschau {
+  margin: 0;
+  border: 1px solid var(--linie);
+  border-radius: var(--radius);
+  background: var(--grund-tief);
+  overflow: hidden;
+}
+.vorschau--bild {
+  display: grid;
+  place-items: center;
+  padding: 14px;
+}
+.vorschau__bild {
+  display: block;
+  max-width: 100%;
+  max-height: 68vh;
+  border-radius: 2px;
+  object-fit: contain;
+}
+.vorschau--pdf {
+  height: min(74vh, 900px);
+}
+.vorschau__pdf {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  background: #2a2a2a;
+}
+.vorschau--ohne {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 18px 20px;
+  background: var(--flaeche);
+}
+.vorschau__typ {
+  flex: none;
+  display: grid;
+  place-items: center;
+  min-width: 64px;
+  height: 78px;
+  padding: 0 8px;
+  border: 1px solid var(--linie-stark);
+  border-radius: 3px 10px 3px 3px;
+  background: var(--grund-tief);
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  color: var(--akzent);
+}
+.vorschau__text {
+  max-width: 52ch;
+  font-size: 0.84em;
+  line-height: 1.5;
+  color: var(--text-2);
+  text-wrap: pretty;
+}
+
+/* Anhänge auf der Tagesseite */
+.anhaenge {
+  padding-top: 18px;
+  border-top: 1px solid var(--linie);
+}
+.anhaenge__kopf {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+.anhaenge__kopf .tagebuch__label {
+  margin-bottom: 8px;
+}
+.anhaenge .hinweisband,
+.anhaenge .tagebuch__fehler {
+  margin-bottom: 12px;
+  font-size: 13px;
+}
+.anhaenge__liste {
+  list-style: none;
+  margin: 0 0 12px;
+  padding: 0;
+  border-bottom: 1px solid var(--linie);
+}
+.anhang {
+  display: grid;
+  grid-template-columns: 46px minmax(0, 1fr) auto auto auto;
+  gap: 10px;
+  align-items: center;
+  padding: 8px 0;
+  border-top: 1px solid var(--linie);
+  font-size: 14px;
+}
+.anhang__name {
+  min-width: 0;
+  padding: 1px 4px;
+  margin: -1px -4px;
+  border-radius: var(--radius-klein);
+  color: var(--text-stark);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-decoration: underline;
+  text-decoration-color: transparent;
+  text-underline-offset: 3px;
+  transition:
+    color var(--takt) var(--kurve),
+    text-decoration-color var(--takt) var(--kurve);
+}
+.anhang__name:hover {
+  color: var(--akzent-hell);
+  text-decoration-color: var(--akzent);
+}
+.anhang__groesse {
+  font-size: 11px;
+  letter-spacing: 0.02em;
+  color: var(--text-3);
+  white-space: nowrap;
+}
+.anhaenge__fuss {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 14px;
+}
+.anhaenge__hinweis {
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: var(--text-3);
+}
+.anhaenge--ablage .anhaenge__hinweis {
+  color: var(--akzent-hell);
+}
+
+/* Eine Datei wird über die Tagesseite gezogen: der Schreibbereich leuchtet. */
+.tagebuch--ablage .tagebuch__feld {
+  border-color: var(--akzent);
+  box-shadow: 0 0 0 3px var(--fokus);
+  background: var(--flaeche-warm);
+}
+
+/* Büroklammer im Kalender und in der Monatsliste */
+.tag__klammer {
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  width: 9px;
+  height: 9px;
+  color: var(--text-2);
+  opacity: 0.85;
+}
+.tag--ereignis .tag__klammer {
+  color: var(--ereignis, var(--akzent));
+}
+.tag--aktiv .tag__klammer {
+  color: var(--text-stark);
+}
+.tag--fremd .tag__klammer {
+  color: var(--leise);
+}
+.eintragzeile:has(.eintragzeile__anhang) {
+  grid-template-columns: 60px minmax(0, 1fr) auto;
+}
+.eintragzeile__anhang {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  font-size: 10px;
+  color: var(--text-3);
+}
+.eintragzeile__klammer {
+  width: 11px;
+  height: 11px;
+}
+.eintragzeile--aktiv .eintragzeile__anhang {
+  color: var(--text-2);
+}
+
+@media (max-width: 980px) {
+  .dokumente,
+  .dokument {
+    padding: 32px 32px 96px;
+  }
+  .dokzeile {
+    grid-template-columns: 46px minmax(0, 1fr) auto;
+  }
+  .dokzeile__meta {
+    grid-column: 2;
+    grid-row: 2;
+  }
+  .dokzeile .knopf {
+    grid-column: 3;
+    grid-row: 1 / span 2;
+  }
+  .anhang {
+    grid-template-columns: 46px minmax(0, 1fr) auto auto;
+  }
+  .anhang__groesse {
+    display: none;
   }
 }
 

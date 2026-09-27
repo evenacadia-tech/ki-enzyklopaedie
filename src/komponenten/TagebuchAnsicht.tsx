@@ -1,5 +1,8 @@
 import { useEffect, type KeyboardEvent } from 'react';
 import { hrefTagebuch } from '../router';
+import { useDateiAblage } from '../dokumente/ablage';
+import { anhaengeFuer } from '../dokumente/modell';
+import { importiereDokumente, useDokumente } from '../dokumente/zustand';
 import {
   FARBEN,
   FARBE_NAME,
@@ -27,11 +30,13 @@ import {
   useTagebuch,
   type TagebuchZustand,
 } from '../tagebuch/zustand';
+import { TagebuchAnhaenge } from './TagebuchAnhaenge';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Ein Tag im Tagebuch: Datum als Titel, Tag-Navigation, der Ereignis-Schalter mit
-// Kurzbezeichnung und Farbwahl (fünf Farben, ohne Legende), das Textfeld (wächst mit, speichert von selbst) und rechts die
-// Randspalte mit Fakten, dem Rückblick auf den vorherigen Eintrag und dem Sprung
+// Kurzbezeichnung und Farbwahl (fünf Farben, ohne Legende), das Textfeld (wächst mit,
+// speichert von selbst), darunter die Anhänge des Tages (die ganze Seite nimmt
+// hineingezogene Dateien an) und rechts die Randspalte mit Fakten, dem Rückblick auf den vorherigen Eintrag und dem Sprung
 // zum nächsten. Gerendert wird nur; Zustand und Sicherung liegen in
 // `tagebuch/zustand.ts`.
 // ─────────────────────────────────────────────────────────────────────────────
@@ -57,9 +62,18 @@ function tagMitWochentag(iso: string): string {
 
 export function TagebuchAnsicht({ datum }: { datum: string }) {
   const z = useTagebuch();
+  const dok = useDokumente();
   useEffect(() => {
     void ladeTagebuch();
   }, []);
+  // Dateien aus dem Explorer: wo auch immer sie auf der Tagesseite landen, sie hängen am Tag.
+  const zone = useDateiAblage({
+    aktiv: dok.status === 'bereit' && dok.dateien && !dok.importLaeuft,
+    ersatz: 'tag',
+    aufAblage: (pfade) => void importiereDokumente(pfade, 'anhang', datum),
+  });
+  const zieht = zone !== undefined;
+  const anhaenge = anhaengeFuer(dok.dokumente, datum).length;
   // Beim Verlassen des Tages sofort sichern (Remount pro Tag über key={datum}).
   useEffect(
     () => () => {
@@ -104,7 +118,7 @@ export function TagebuchAnsicht({ datum }: { datum: string }) {
   };
 
   return (
-    <article className="tagebuch" aria-labelledby="tagebuch-titel">
+    <article className={'tagebuch' + (zieht ? ' tagebuch--ablage' : '')} aria-labelledby="tagebuch-titel" data-ablage="tag">
       <header className="artikel__kopf tagebuch__kopf">
         <p className="pfad mono">
           <span>Tagebuch</span>
@@ -215,6 +229,8 @@ export function TagebuchAnsicht({ datum }: { datum: string }) {
               ) : null}
             </p>
           </div>
+
+          <TagebuchAnhaenge datum={datum} zieht={zieht} />
         </div>
 
         <aside className="artikel__rand" aria-label="Zum Tag">
@@ -226,6 +242,10 @@ export function TagebuchAnsicht({ datum }: { datum: string }) {
             <div className="fakten__zeile">
               <dt className="mono">Fragen</dt>
               <dd>{fragen === 0 ? 'keine' : fragen === 1 ? '1 offene' : `${fragen} offene`}</dd>
+            </div>
+            <div className="fakten__zeile">
+              <dt className="mono">Anhänge</dt>
+              <dd>{anhaenge === 0 ? 'keine' : anhaenge}</dd>
             </div>
             <div className="fakten__zeile">
               <dt className="mono">Geändert</dt>

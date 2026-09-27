@@ -1,17 +1,38 @@
-// Dünne Hülle: ein Fenster, das statische Frontend, das Opener-Plugin für die
-// Quellen-Links, das Dialog-Plugin für den Export und das Window-State-Plugin
-// (Fenstergröße und -lage merken). Das Tagebuch liegt als `tagebuch.json` im
-// App-Datenordner und wird über drei eigene Commands gelesen und geschrieben —
-// atomar (erst .tmp, dann Umbenennen) und mit Sicherungskopie `tagebuch.bak.json`
-// der jeweils vorigen Fassung. Der Inhalt der Enzyklopädie liegt im Frontend.
+// Dünne Hülle: ein Fenster, das statische Frontend, das Opener-Plugin (Quellen-Links,
+// Dokumente öffnen und im Ordner zeigen), das Dialog-Plugin (Export, Dateiauswahl,
+// Rückfrage) und das Window-State-Plugin (Fenstergröße und -lage merken).
+//
+// Im App-Datenordner liegen zwei JSON-Dateien — `tagebuch.json` und `dokumente.json`
+// (der Index der importierten Dokumente) —, gelesen und geschrieben über `json_lese` /
+// `json_schreibe`: nur diese beiden Namen sind erlaubt, geschrieben wird atomar (erst
+// .tmp, dann Umbenennen) und mit Sicherungskopie `<name>.bak.json` der vorigen Fassung.
+// Daneben der Ordner `dokumente/` mit den importierten Dateien, benannt
+// `<id>_<Originalname>`. Das Frontend nennt nie einen Zielpfad: es übergibt eine Kennung
+// (zehn Zeichen a–z, 0–9), die hier im Ordner aufgelöst wird. Der Inhalt der
+// Enzyklopädie liegt im Frontend.
+use serde::Serialize;
+use std::collections::hash_map::RandomState;
 use std::fs;
+use std::hash::{BuildHasher, Hasher};
 use std::io::Write;
 use std::path::{Path, PathBuf};
+use std::time::{SystemTime, UNIX_EPOCH};
 use tauri::{AppHandle, Manager};
+use tauri_plugin_opener::OpenerExt;
 
-const DATEI: &str = "tagebuch.json";
-const SICHERUNG: &str = "tagebuch.bak.json";
-const TEMP: &str = "tagebuch.json.tmp";
+/// Die JSON-Dateien im App-Datenordner, die das Frontend lesen und schreiben darf.
+const JSON_DATEIEN: [&str; 2] = ["tagebuch.json", "dokumente.json"];
+const DOKUMENTE_ORDNER: &str = "dokumente";
+const ID_LAENGE: usize = 10;
+const ID_ZEICHEN: &[u8; 36] = b"abcdefghijklmnopqrstuvwxyz0123456789";
+/// Längster Dateiname (in Zeichen), den ein Import behält — der Rest wird vor der Endung gekürzt.
+const NAME_MAX: usize = 120;
+/// Dateitypen, die „Öffnen“ starten statt anzeigen würde. Solche Dateien lassen sich
+/// importieren und im Ordner zeigen, aber nicht aus der App heraus ausführen.
+const AUSFUEHRBAR: [&str; 22] = [
+    "exe", "com", "bat", "cmd", "msi", "msp", "scr", "pif", "cpl", "lnk", "ps1", "psm1", "vbs",
+    "vbe", "js", "jse", "wsf", "wsh", "hta", "jar", "reg", "appref-ms",
+];
 
 fn datenordner(app: &AppHandle) -> Result<PathBuf, String> {
     let dir = app
@@ -23,18 +44,36 @@ fn datenordner(app: &AppHandle) -> Result<PathBuf, String> {
     Ok(dir)
 }
 
-/// Voller Pfad der Tagebuch-Datei (Anzeige in der Seitenleiste).
-#[tauri::command]
-fn tagebuch_pfad(app: AppHandle) -> Result<String, String> {
-    Ok(datenordner(&app)?.join(DATEI).to_string_lossy().into_owned())
+fn dokumentenordner(app: &AppHandle) -> Result<PathBuf, String> {
+    let dir = datenordner(app)?.join(DOKUMENTE_ORDNER);
+    fs::create_dir_all(&dir)
+        .map_err(|e| format!("Dokumente-Ordner {} nicht anlegbar: {e}", dir.display()))?;
+    Ok(dir)
 }
 
-/// Liest die Tagebuch-Datei als Text. `None`, wenn es noch keine gibt — jeder
-/// andere Fehler (auch eine leere oder halbe Datei) bleibt ein Fehler, damit das
-/// Frontend das Schreiben sperrt und nichts überschreibt.
-#[tauri::command]
-fn tagebuch_lese(app: AppHandle) -> Result<Option<String>, String> {
-    let pfad = datenordner(&app)?.join(DATEI);
+// ── JSON-Dateien ─────────────────────────────────────────────────────────────
+
+/// Nur die bekannten Dateinamen — alles andere (auch Pfade) wird abgelehnt.
+fn erlaubte_datei(name: &str) -> Result<&'static str, String> {
+    JSON_DATEIEN
+        .iter()
+        .copied()
+        .find(|d| *d == name)
+        .ok_or_else(|| format!("Unbekannte Datei: {name}"))
+}
+
+/// `tagebuch.json` → `tagebuch.bak.json`
+fn sicherung_name(datei: &str) -> String {
+    format!("{}.bak.json", datei.trim_end_matches(".json"))
+}
+
+/// `tagebuch.json` → `tagebuch.json.tmp`
+fn temp_name(datei: &str) -> String {
+    format!("{datei}.tmp")
+}
+
+fn lese_json_in(dir: &Path, name: &str) -> Result<Option<String>, String> {
+    let pfad = dir.join(erlaubte_datei(name)?);
     match fs::read_to_string(&pfad) {
         Ok(text) => Ok(Some(text)),
         Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok(None),
@@ -42,16 +81,35 @@ fn tagebuch_lese(app: AppHandle) -> Result<Option<String>, String> {
     }
 }
 
-/// Schreibt das Tagebuch atomar und legt vorher die Sicherungskopie an.
-#[tauri::command]
-fn tagebuch_schreibe(app: AppHandle, inhalt: String) -> Result<(), String> {
-    let dir = datenordner(&app)?;
+fn schreibe_json_in(dir: &Path, name: &str, inhalt: &str) -> Result<(), String> {
+    let datei = erlaubte_datei(name)?;
     schreibe_atomar(
-        &dir.join(DATEI),
-        &dir.join(TEMP),
-        Some(&dir.join(SICHERUNG)),
+        &dir.join(datei),
+        &dir.join(temp_name(datei)),
+        Some(&dir.join(sicherung_name(datei))),
         inhalt.as_bytes(),
     )
+}
+
+/// Voller Pfad einer der JSON-Dateien (Anzeige in der Seitenleiste).
+#[tauri::command]
+fn json_pfad(app: AppHandle, name: String) -> Result<String, String> {
+    let datei = erlaubte_datei(&name)?;
+    Ok(datenordner(&app)?.join(datei).to_string_lossy().into_owned())
+}
+
+/// Liest eine der JSON-Dateien als Text. `None`, wenn es sie noch nicht gibt — jeder
+/// andere Fehler (auch eine leere oder halbe Datei) bleibt ein Fehler, damit das
+/// Frontend das Schreiben sperrt und nichts überschreibt.
+#[tauri::command]
+fn json_lese(app: AppHandle, name: String) -> Result<Option<String>, String> {
+    lese_json_in(&datenordner(&app)?, &name)
+}
+
+/// Schreibt eine der JSON-Dateien atomar und legt vorher die Sicherungskopie an.
+#[tauri::command]
+fn json_schreibe(app: AppHandle, name: String, inhalt: String) -> Result<(), String> {
+    schreibe_json_in(&datenordner(&app)?, &name, &inhalt)
 }
 
 /// Schreibt eine vom Nutzer im Speichern-Dialog gewählte Datei (Export).
@@ -98,16 +156,229 @@ fn schreibe_atomar(
     Ok(())
 }
 
+// ── Dokumente ────────────────────────────────────────────────────────────────
+
+/// Was ein Import zurückgibt. Art, Tag, Notiz und Zeitpunkt ergänzt das Frontend und
+/// schreibt den Eintrag in den Index.
+#[derive(Debug, Serialize, PartialEq)]
+struct Importiert {
+    id: String,
+    /// Dateiname im Dokumente-Ordner: `<id>_<name>`.
+    datei: String,
+    /// Bereinigter Originalname (Anzeigename beim Import).
+    name: String,
+    groesse: u64,
+    /// Endung in Kleinbuchstaben, leer ohne Endung.
+    typ: String,
+}
+
+fn ist_id(id: &str) -> bool {
+    id.len() == ID_LAENGE
+        && id
+            .bytes()
+            .all(|b| b.is_ascii_lowercase() || b.is_ascii_digit())
+}
+
+/// Die Datei zu einer Kennung: der Eintrag im Ordner, dessen Name mit `<id>_` beginnt.
+fn suche_dokument(dir: &Path, id: &str) -> Result<Option<PathBuf>, String> {
+    if !ist_id(id) {
+        return Err(format!("Ungültige Dokument-Kennung: {id}"));
+    }
+    let anfang = format!("{id}_");
+    let eintraege = match fs::read_dir(dir) {
+        Ok(e) => e,
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => return Ok(None),
+        Err(e) => return Err(format!("{} nicht lesbar: {e}", dir.display())),
+    };
+    for eintrag in eintraege {
+        let eintrag = eintrag.map_err(|e| format!("{} nicht lesbar: {e}", dir.display()))?;
+        if eintrag.file_name().to_string_lossy().starts_with(&anfang) {
+            let pfad = eintrag.path();
+            if pfad.is_file() {
+                return Ok(Some(pfad));
+            }
+        }
+    }
+    Ok(None)
+}
+
+fn finde_dokument(dir: &Path, id: &str) -> Result<PathBuf, String> {
+    suche_dokument(dir, id)?.ok_or_else(|| {
+        format!(
+            "Die Datei zu diesem Dokument fehlt im Ordner {}.",
+            dir.display()
+        )
+    })
+}
+
+/// Eine Kennung, die im Ordner noch frei ist. Der Zufall kommt aus dem Hasher der
+/// Standardbibliothek (je Aufruf neu gesät) — genug für eindeutige Dateinamen.
+fn neue_id(dir: &Path) -> Result<String, String> {
+    let nanos = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|d| d.as_nanos())
+        .unwrap_or(0);
+    for versuch in 0..64u32 {
+        let mut h = RandomState::new().build_hasher();
+        h.write_u128(nanos);
+        h.write_u32(std::process::id());
+        h.write_u32(versuch);
+        let mut n = h.finish();
+        let mut id = String::with_capacity(ID_LAENGE);
+        for _ in 0..ID_LAENGE {
+            id.push(ID_ZEICHEN[(n % 36) as usize] as char);
+            n /= 36;
+        }
+        if suche_dokument(dir, &id)?.is_none() {
+            return Ok(id);
+        }
+    }
+    Err("Keine freie Dokument-Kennung gefunden.".into())
+}
+
+/// Der Dateiname der Quelle ohne Pfadanteile, ohne unter Windows verbotene Zeichen,
+/// auf `NAME_MAX` Zeichen gekürzt (die Endung bleibt).
+fn sauberer_name(quelle: &Path) -> String {
+    let roh = quelle
+        .file_name()
+        .map(|n| n.to_string_lossy().into_owned())
+        .unwrap_or_default();
+    let ersetzt: String = roh
+        .chars()
+        .map(|c| {
+            if c.is_control() || "<>:\"/\\|?*".contains(c) {
+                '_'
+            } else {
+                c
+            }
+        })
+        .collect();
+    let name = ersetzt.trim().trim_end_matches(['.', ' ']).to_string();
+    if name.is_empty() {
+        return "datei".into();
+    }
+    if name.chars().count() <= NAME_MAX {
+        return name;
+    }
+    let (stamm, endung) = match name.rfind('.') {
+        Some(p) if p > 0 && name.len() - p <= 12 => (&name[..p], &name[p..]),
+        _ => (name.as_str(), ""),
+    };
+    let platz = NAME_MAX.saturating_sub(endung.chars().count()).max(1);
+    let gekuerzt: String = stamm.chars().take(platz).collect();
+    format!("{}{endung}", gekuerzt.trim_end())
+}
+
+fn endung(name: &str) -> String {
+    Path::new(name)
+        .extension()
+        .map(|e| e.to_string_lossy().to_lowercase())
+        .unwrap_or_default()
+}
+
+/// Kopiert `quelle` in den Ordner. Das Original bleibt, wo es ist.
+fn importiere_in(dir: &Path, quelle: &Path) -> Result<Importiert, String> {
+    let meta = fs::metadata(quelle).map_err(|e| format!("{} nicht lesbar: {e}", quelle.display()))?;
+    if !meta.is_file() {
+        return Err(format!(
+            "{} ist keine Datei (Ordner lassen sich nicht importieren).",
+            quelle.display()
+        ));
+    }
+    fs::create_dir_all(dir).map_err(|e| format!("{} nicht anlegbar: {e}", dir.display()))?;
+    let id = neue_id(dir)?;
+    let name = sauberer_name(quelle);
+    let datei = format!("{id}_{name}");
+    let ziel = dir.join(&datei);
+    let groesse = fs::copy(quelle, &ziel).map_err(|e| {
+        // Eine halb kopierte Datei nicht liegen lassen.
+        let _ = fs::remove_file(&ziel);
+        format!("{} nicht kopierbar: {e}", quelle.display())
+    })?;
+    Ok(Importiert {
+        id,
+        typ: endung(&name),
+        datei,
+        name,
+        groesse,
+    })
+}
+
+/// Löscht die Datei endgültig. Fehlt sie schon, gilt das als erledigt — sonst ließe
+/// sich ein verwaister Index-Eintrag nie entfernen.
+fn entferne_in(dir: &Path, id: &str) -> Result<(), String> {
+    match suche_dokument(dir, id)? {
+        Some(pfad) => fs::remove_file(&pfad).map_err(|e| format!("{} nicht löschbar: {e}", pfad.display())),
+        None => Ok(()),
+    }
+}
+
+/// Der Dokumente-Ordner (Anzeige in der Fußzeile, Hinweis zur Datensicherung).
+#[tauri::command]
+fn dokumente_ordner(app: AppHandle) -> Result<String, String> {
+    Ok(dokumentenordner(&app)?.to_string_lossy().into_owned())
+}
+
+/// Kopiert eine Datei (aus dem Dialog oder per Hineinziehen) in die App.
+#[tauri::command]
+fn dokument_importiere(app: AppHandle, quelle: String) -> Result<Importiert, String> {
+    importiere_in(&dokumentenordner(&app)?, Path::new(&quelle))
+}
+
+/// Voller Pfad eines Dokuments — für die Vorschau über das Asset-Protokoll.
+#[tauri::command]
+fn dokument_pfad(app: AppHandle, id: String) -> Result<String, String> {
+    Ok(finde_dokument(&dokumentenordner(&app)?, &id)?
+        .to_string_lossy()
+        .into_owned())
+}
+
+/// Öffnet ein Dokument im Standardprogramm. Ausführbare Dateien werden nicht gestartet.
+#[tauri::command]
+fn dokument_oeffne(app: AppHandle, id: String) -> Result<(), String> {
+    let pfad = finde_dokument(&dokumentenordner(&app)?, &id)?;
+    let typ = endung(&pfad.to_string_lossy());
+    if AUSFUEHRBAR.contains(&typ.as_str()) {
+        return Err(format!(
+            "Dateien vom Typ .{typ} startet die App nicht. Über „Im Ordner zeigen“ ist die Datei erreichbar."
+        ));
+    }
+    app.opener()
+        .open_path(pfad.to_string_lossy().into_owned(), None::<&str>)
+        .map_err(|e| format!("{} lässt sich nicht öffnen: {e}", pfad.display()))
+}
+
+/// Zeigt ein Dokument im Explorer (Ordner geöffnet, Datei ausgewählt).
+#[tauri::command]
+fn dokument_zeige(app: AppHandle, id: String) -> Result<(), String> {
+    let pfad = finde_dokument(&dokumentenordner(&app)?, &id)?;
+    app.opener()
+        .reveal_item_in_dir(&pfad)
+        .map_err(|e| format!("{} lässt sich nicht zeigen: {e}", pfad.display()))
+}
+
+/// Entfernt die Kopie in der App endgültig. Das Original am Herkunftsort bleibt.
+#[tauri::command]
+fn dokument_entferne(app: AppHandle, id: String) -> Result<(), String> {
+    entferne_in(&dokumentenordner(&app)?, &id)
+}
+
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_window_state::Builder::default().build())
         .invoke_handler(tauri::generate_handler![
-            tagebuch_pfad,
-            tagebuch_lese,
-            tagebuch_schreibe,
-            datei_schreibe
+            json_pfad,
+            json_lese,
+            json_schreibe,
+            datei_schreibe,
+            dokumente_ordner,
+            dokument_importiere,
+            dokument_pfad,
+            dokument_oeffne,
+            dokument_zeige,
+            dokument_entferne
         ])
         .run(tauri::generate_context!())
         .expect("Fehler beim Start der Tauri-Anwendung");
@@ -117,6 +388,10 @@ pub fn run() {
 mod tests {
     use super::*;
     use serde_json::Value;
+
+    const DATEI: &str = "tagebuch.json";
+    const SICHERUNG: &str = "tagebuch.bak.json";
+    const TEMP: &str = "tagebuch.json.tmp";
 
     fn config() -> Value {
         serde_json::from_str(include_str!("../tauri.conf.json"))
@@ -151,6 +426,34 @@ mod tests {
         let csp = c["app"]["security"]["csp"].as_str().expect("csp gesetzt");
         assert!(csp.contains("default-src 'self'"));
         assert!(!csp.contains("https:"), "kein pauschaler Remote-Zugriff");
+        assert!(!csp.contains('*'), "keine Platzhalter in der CSP");
+        // Vorschau der Dokumente: Bilder und PDF nur über das Asset-Protokoll.
+        for direktive in ["img-src", "frame-src"] {
+            let teil = csp
+                .split(';')
+                .map(str::trim)
+                .find(|t| t.starts_with(direktive))
+                .unwrap_or_else(|| panic!("{direktive} fehlt in der CSP"));
+            assert!(teil.contains("asset:"), "{direktive} erlaubt asset:");
+            assert!(
+                teil.contains("http://asset.localhost"),
+                "{direktive} erlaubt http://asset.localhost"
+            );
+        }
+    }
+
+    #[test]
+    fn asset_protokoll_reicht_nur_in_den_dokumente_ordner() {
+        let c = config();
+        let asset = &c["app"]["security"]["assetProtocol"];
+        assert_eq!(asset["enable"], true);
+        let scope: Vec<&str> = asset["scope"]
+            .as_array()
+            .expect("scope ist eine Liste")
+            .iter()
+            .map(|s| s.as_str().unwrap())
+            .collect();
+        assert_eq!(scope, vec!["$APPDATA/dokumente/**"]);
     }
 
     #[test]
@@ -195,5 +498,137 @@ mod tests {
         assert_eq!(fs::read_to_string(&ziel).unwrap(), "# Tagebuch\n");
         assert!(!temp.exists());
         let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn json_dateien_nur_von_der_liste_und_mit_eigener_sicherung() {
+        assert_eq!(sicherung_name("tagebuch.json"), "tagebuch.bak.json");
+        assert_eq!(sicherung_name("dokumente.json"), "dokumente.bak.json");
+        assert_eq!(temp_name("dokumente.json"), "dokumente.json.tmp");
+        for fremd in [
+            "",
+            "anderes.json",
+            "..\\tagebuch.json",
+            "../tagebuch.json",
+            "dokumente/x.json",
+            "C:\\Windows\\win.ini",
+            "TAGEBUCH.JSON",
+        ] {
+            assert!(erlaubte_datei(fremd).is_err(), "{fremd:?} muss abgelehnt werden");
+        }
+
+        let dir = testordner("json");
+        assert_eq!(lese_json_in(&dir, "dokumente.json").unwrap(), None);
+        assert!(lese_json_in(&dir, "../dokumente.json").is_err());
+        assert!(schreibe_json_in(&dir, "fremd.json", "{}").is_err());
+        assert!(fs::read_dir(&dir).unwrap().next().is_none(), "nichts geschrieben");
+
+        schreibe_json_in(&dir, "dokumente.json", r#"{"version":1,"dokumente":[]}"#).unwrap();
+        schreibe_json_in(&dir, "dokumente.json", r#"{"version":1,"dokumente":[1]}"#).unwrap();
+        assert_eq!(
+            lese_json_in(&dir, "dokumente.json").unwrap().as_deref(),
+            Some(r#"{"version":1,"dokumente":[1]}"#)
+        );
+        assert_eq!(
+            fs::read_to_string(dir.join("dokumente.bak.json")).unwrap(),
+            r#"{"version":1,"dokumente":[]}"#
+        );
+        // Die beiden Dateien stören einander nicht.
+        assert_eq!(lese_json_in(&dir, "tagebuch.json").unwrap(), None);
+        assert!(!dir.join("tagebuch.bak.json").exists());
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn kennung_hat_genau_zehn_kleine_zeichen() {
+        assert!(ist_id("abc123xyz0"));
+        for falsch in [
+            "",
+            "abc123xyz",
+            "abc123xyz01",
+            "ABC123xyz0",
+            "abc123xy_0",
+            "../../../a",
+            "abc\\123xyz",
+            "äbc123xyz0",
+        ] {
+            assert!(!ist_id(falsch), "{falsch:?} ist keine Kennung");
+        }
+        let dir = testordner("kennung");
+        assert!(suche_dokument(&dir, "../../../a").is_err());
+        assert!(finde_dokument(&dir, "abc123xyz0").is_err(), "nichts im Ordner");
+        let a = neue_id(&dir).unwrap();
+        let b = neue_id(&dir).unwrap();
+        assert!(ist_id(&a) && ist_id(&b));
+        assert_ne!(a, b);
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn dateiname_wird_bereinigt_und_gekuerzt() {
+        assert_eq!(sauberer_name(Path::new("C:\\Users\\x\\Zeugnis 2026.pdf")), "Zeugnis 2026.pdf");
+        assert_eq!(sauberer_name(Path::new("ordner/unter/Foto.JPG")), "Foto.JPG");
+        assert_eq!(sauberer_name(Path::new("a<b>c:d\"e|f?g*.txt")), "a_b_c_d_e_f_g_.txt");
+        assert_eq!(sauberer_name(Path::new("Bericht. ")), "Bericht");
+        assert_eq!(sauberer_name(Path::new("")), "datei");
+        let lang = format!("{}.pdf", "ä".repeat(300));
+        let kurz = sauberer_name(Path::new(&lang));
+        assert_eq!(kurz.chars().count(), NAME_MAX);
+        assert!(kurz.ends_with(".pdf"));
+        assert_eq!(endung("Foto.JPG"), "jpg");
+        assert_eq!(endung("ohne"), "");
+        assert_eq!(endung("archiv.tar.gz"), "gz");
+    }
+
+    #[test]
+    fn import_kopiert_findet_und_entfernt() {
+        let dir = testordner("import");
+        let quellen = dir.join("quellen");
+        let ziel = dir.join("dokumente");
+        fs::create_dir_all(&quellen).unwrap();
+        let original = quellen.join("Zertifikat KI-Grundlagen.pdf");
+        fs::write(&original, b"%PDF-1.7 Beispiel").unwrap();
+
+        // Der Zielordner entsteht beim ersten Import.
+        let d = importiere_in(&ziel, &original).unwrap();
+        assert!(ist_id(&d.id));
+        assert_eq!(d.name, "Zertifikat KI-Grundlagen.pdf");
+        assert_eq!(d.datei, format!("{}_Zertifikat KI-Grundlagen.pdf", d.id));
+        assert_eq!(d.typ, "pdf");
+        assert_eq!(d.groesse, 17);
+        let kopie = finde_dokument(&ziel, &d.id).unwrap();
+        assert_eq!(kopie, ziel.join(&d.datei));
+        assert_eq!(fs::read(&kopie).unwrap(), b"%PDF-1.7 Beispiel");
+        assert!(original.exists(), "das Original bleibt liegen");
+
+        // Dieselbe Datei zweimal: zwei Kopien mit eigener Kennung.
+        let e = importiere_in(&ziel, &original).unwrap();
+        assert_ne!(d.id, e.id);
+        assert_eq!(fs::read_dir(&ziel).unwrap().count(), 2);
+
+        // Ordner und fehlende Dateien lassen sich nicht importieren.
+        assert!(importiere_in(&ziel, &quellen).is_err());
+        assert!(importiere_in(&ziel, &quellen.join("fehlt.pdf")).is_err());
+        assert_eq!(fs::read_dir(&ziel).unwrap().count(), 2);
+
+        // Entfernen löscht nur die eine Kopie; ein zweites Mal ist kein Fehler.
+        entferne_in(&ziel, &d.id).unwrap();
+        assert!(finde_dokument(&ziel, &d.id).is_err());
+        assert!(finde_dokument(&ziel, &e.id).is_ok());
+        entferne_in(&ziel, &d.id).unwrap();
+        assert!(entferne_in(&ziel, "..\\..\\xx").is_err());
+        assert!(original.exists());
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn ausfuehrbare_typen_stehen_auf_der_sperrliste() {
+        for typ in ["exe", "bat", "cmd", "msi", "ps1", "lnk", "vbs", "js"] {
+            assert!(AUSFUEHRBAR.contains(&typ), ".{typ} darf nicht gestartet werden");
+        }
+        for typ in ["pdf", "png", "jpg", "docx", "xlsx", "txt", ""] {
+            assert!(!AUSFUEHRBAR.contains(&typ), ".{typ} ist ein Dokument");
+        }
+        assert_eq!(endung("C:\\x\\abc123xyz0_Setup.EXE"), "exe");
     }
 }

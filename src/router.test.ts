@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { hrefArtikel, parseHash } from './router';
+import { hrefArtikel, hrefDokument, parseHash } from './router';
 
 describe('parseHash', () => {
   it('leitet leere/Start-Hashes auf die Übersicht', () => {
@@ -31,5 +31,20 @@ describe('parseHash — Tagebuch', () => {
   it('weist unmögliche Tage ab', () => {
     expect(parseHash('#/tagebuch/2026-02-30')).toEqual({ art: 'unbekannt', hash: '#/tagebuch/2026-02-30' });
     expect(parseHash('#/tagebuch/heute')).toEqual({ art: 'unbekannt', hash: '#/tagebuch/heute' });
+  });
+});
+
+describe('parseHash — Dokumente', () => {
+  it('erkennt die Übersicht und ein Dokument', () => {
+    expect(parseHash('#/dokumente')).toEqual({ art: 'dokumente', id: null });
+    expect(parseHash('#/dokumente/')).toEqual({ art: 'dokumente', id: null });
+    expect(parseHash('#/dokumente/abc123xyz0')).toEqual({ art: 'dokumente', id: 'abc123xyz0' });
+    expect(parseHash(hrefDokument('abc123xyz0'))).toEqual({ art: 'dokumente', id: 'abc123xyz0' });
+  });
+
+  it('weist alles ab, was keine Kennung ist', () => {
+    for (const hash of ['#/dokumente/kurz', '#/dokumente/ABC123XYZ0', '#/dokumente/abc123xyz01', '#/dokumente/..%2F..%2Fa', '#/dokumente/a/b']) {
+      expect(parseHash(hash)).toEqual({ art: 'unbekannt', hash });
+    }
   });
 });

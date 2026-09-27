@@ -3,6 +3,7 @@ import { enzyklopaedie } from './inhalt';
 import { useRoute } from './router';
 import { formatiereTagLang, heute } from './tagebuch/modell';
 import { speichereJetzt } from './tagebuch/zustand';
+import { speichereDokumenteJetzt, useDokumente } from './dokumente/zustand';
 import { Kopf, type Bereich } from './komponenten/Kopf';
 import { Seitenleiste } from './komponenten/Seitenleiste';
 import { ArtikelAnsicht } from './komponenten/ArtikelAnsicht';
@@ -10,6 +11,9 @@ import { Start } from './komponenten/Start';
 import { NichtGefunden } from './komponenten/NichtGefunden';
 import { TagebuchLeiste } from './komponenten/TagebuchLeiste';
 import { TagebuchAnsicht } from './komponenten/TagebuchAnsicht';
+import { DokumenteLeiste } from './komponenten/DokumenteLeiste';
+import { DokumenteUebersicht } from './komponenten/DokumenteUebersicht';
+import { DokumentAnsicht } from './komponenten/DokumentAnsicht';
 
 const TITEL = 'KI-Enzyklopädie';
 
@@ -38,17 +42,29 @@ export function App() {
   const artikel = route.art === 'artikel' ? enzyklopaedie.nachId(route.id) : undefined;
   // „#/tagebuch“ ohne Tag meint den heutigen Tag (lokale Zeit).
   const tagebuchDatum = route.art === 'tagebuch' ? (route.datum ?? heute()) : null;
-  const bereich: Bereich = tagebuchDatum ? 'tagebuch' : 'enzyklopaedie';
-  const routeKey = route.art === 'artikel' ? route.id : tagebuchDatum ? `tagebuch:${tagebuchDatum}` : route.art;
+  const inDokumenten = route.art === 'dokumente';
+  const dokumentId = route.art === 'dokumente' ? route.id : null;
+  const dokumentName = useDokumente().dokumente.find((d) => d.id === dokumentId)?.name ?? null;
+  const bereich: Bereich = tagebuchDatum ? 'tagebuch' : inDokumenten ? 'dokumente' : 'enzyklopaedie';
+  const routeKey =
+    route.art === 'artikel'
+      ? route.id
+      : tagebuchDatum
+        ? `tagebuch:${tagebuchDatum}`
+        : inDokumenten
+          ? `dokumente:${dokumentId ?? ''}`
+          : route.art;
 
-  // Fenstertitel folgt dem Artikel bzw. dem Tag.
+  // Fenstertitel folgt dem Artikel, dem Tag bzw. dem Dokument.
   useEffect(() => {
     document.title = artikel
       ? `${artikel.titel} — ${TITEL}`
       : tagebuchDatum
         ? `Tagebuch · ${formatiereTagLang(tagebuchDatum)} — ${TITEL}`
-        : TITEL;
-  }, [artikel, tagebuchDatum]);
+        : inDokumenten
+          ? `${dokumentName ? dokumentName + ' · ' : ''}Dokumente — ${TITEL}`
+          : TITEL;
+  }, [artikel, tagebuchDatum, inDokumenten, dokumentName]);
 
   // Zurück/Vor merken sich die Leseposition; alles andere beginnt oben.
   useEffect(() => {
@@ -91,10 +107,11 @@ export function App() {
     return () => document.removeEventListener('keydown', aufTaste);
   }, []);
 
-  // Beim Schließen/Verlassen ausstehende Tagebuch-Änderungen sofort sichern.
+  // Beim Schließen/Verlassen ausstehende Änderungen (Tagebuch, Dokumente) sofort sichern.
   useEffect(() => {
     const sichern = () => {
       void speichereJetzt();
+      void speichereDokumenteJetzt();
     };
     window.addEventListener('pagehide', sichern);
     window.addEventListener('beforeunload', sichern);
@@ -110,6 +127,8 @@ export function App() {
       <div className="rahmen">
         {tagebuchDatum ? (
           <TagebuchLeiste datum={tagebuchDatum} suchRef={suchRef} />
+        ) : inDokumenten ? (
+          <DokumenteLeiste aktivId={dokumentId} suchRef={suchRef} />
         ) : (
           <Seitenleiste aktivId={artikel?.id ?? null} suchRef={suchRef} />
         )}
@@ -124,6 +143,12 @@ export function App() {
             )
           ) : tagebuchDatum ? (
             <TagebuchAnsicht key={tagebuchDatum} datum={tagebuchDatum} />
+          ) : inDokumenten ? (
+            dokumentId ? (
+              <DokumentAnsicht key={dokumentId} id={dokumentId} />
+            ) : (
+              <DokumenteUebersicht />
+            )
           ) : (
             <NichtGefunden />
           )}

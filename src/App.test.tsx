@@ -7,6 +7,10 @@ import { GELESEN_KEY, _setzeGelesenFuerTests } from './lesefortschritt';
 import { formatiereTagLang, heute } from './tagebuch/modell';
 import { BROWSER_KEY } from './tagebuch/speicher';
 import { konfiguriereTagebuch } from './tagebuch/zustand';
+import { BROWSER_KEY as DOKUMENTE_KEY } from './dokumente/speicher';
+import { konfiguriereDokumente } from './dokumente/zustand';
+import * as dialoge from './dokumente/dialoge';
+import { fakeSpeicher } from './test/fake-dokumente';
 
 // Verdrahtungs-Test gegen den ECHTEN Bestand: Route → Artikel, Suche → Treffer,
 // Register-Umschalter, Tagebuch → Browser-Speicher. Die reinen Logiken haben eigene Tests.
@@ -18,12 +22,21 @@ function setzeHash(hash: string) {
   });
 }
 
+/**
+ * Sauberer Anfang für jeden Test. jsdom führt den Klick auf einen Link erst in einer
+ * späteren Task aus — erst abwarten, sonst fällt die Navigation des vorigen Tests in
+ * diesen und wechselt mittendrin die Route.
+ */
+async function frisch() {
+  await new Promise((r) => setTimeout(r, 0));
+  window.localStorage.clear();
+  window.location.hash = '';
+  konfiguriereTagebuch(null);
+  konfiguriereDokumente(null);
+}
+
 describe('App', () => {
-  beforeEach(() => {
-    window.localStorage.clear();
-    window.location.hash = '';
-    konfiguriereTagebuch(null);
-  });
+  beforeEach(frisch);
   afterEach(cleanup);
 
   it('zeigt die Übersicht mit allen Artikeln als Links', () => {
@@ -103,11 +116,7 @@ describe('App', () => {
 });
 
 describe('Tagebuch', () => {
-  beforeEach(() => {
-    window.localStorage.clear();
-    window.location.hash = '';
-    konfiguriereTagebuch(null);
-  });
+  beforeEach(frisch);
   afterEach(cleanup);
 
   it('öffnet den heutigen Tag über den Bereichs-Umschalter', async () => {
@@ -347,11 +356,9 @@ describe('Tagebuch', () => {
 });
 
 describe('Lesestrecke und Lesefortschritt', () => {
-  beforeEach(() => {
-    window.localStorage.clear();
-    window.location.hash = '';
+  beforeEach(async () => {
+    await frisch();
     _setzeGelesenFuerTests([]);
-    konfiguriereTagebuch(null);
   });
   afterEach(cleanup);
 
@@ -403,5 +410,316 @@ describe('Lesestrecke und Lesefortschritt', () => {
     const start2 = screen.getByRole('region', { name: 'Weiterlesen' });
     expect(within(start2).getByText(`2 von ${strecke.length} gelesen`)).toBeInTheDocument();
     expect(within(start2).getByRole('link', { name: new RegExp('Weiter.*' + strecke[2].titel.slice(0, 12)) })).toBeInTheDocument();
+  });
+});
+
+describe('Dokumente', () => {
+  beforeEach(frisch);
+  afterEach(() => {
+    cleanup();
+    vi.restoreAllMocks();
+  });
+
+  const ZEUGNIS = {
+    id: 'abc123xyz0',
+    datei: 'abc123xyz0_Zeugnis.pdf',
+    name: 'Arbeitszeugnis',
+    art: 'zertifikat' as const,
+    tag: null,
+    notiz: 'Vom ersten Praktikum.',
+    hinzugefuegt: '2026-09-01T08:00:00.000Z',
+    groesse: 2048,
+    typ: 'pdf',
+  };
+  const VERTRAG = {
+    id: 'abc123xyz1',
+    datei: 'abc123xyz1_Vertrag.docx',
+    name: 'Praktikumsvertrag.docx',
+    art: 'dokument' as const,
+    tag: null,
+    notiz: '',
+    hinzugefuegt: '2026-09-05T08:00:00.000Z',
+    groesse: 51200,
+    typ: 'docx',
+  };
+  const FOLIEN = {
+    id: 'abc123xyz2',
+    datei: 'abc123xyz2_Folien.pptx',
+    name: 'Folien.pptx',
+    art: 'anhang' as const,
+    tag: '2026-09-26',
+    notiz: '',
+    hinzugefuegt: '2026-09-26T18:00:00.000Z',
+    groesse: 3 * 1024 * 1024,
+    typ: 'pptx',
+  };
+
+  function bestand() {
+    window.localStorage.setItem(DOKUMENTE_KEY, JSON.stringify({ version: 1, dokumente: [ZEUGNIS, VERTRAG, FOLIEN] }));
+  }
+  const gespeichert = () => JSON.parse(window.localStorage.getItem(DOKUMENTE_KEY)!).dokumente as (typeof ZEUGNIS)[];
+
+  it('ist der dritte Bereich: leere Übersicht mit drei Abteilungen', async () => {
+    render(<App />);
+    const umschalter = screen.getByRole('navigation', { name: 'Bereich' });
+    expect(within(umschalter).getByRole('link', { name: 'Dokumente' })).toHaveAttribute('href', '#/dokumente');
+    setzeHash('#/dokumente');
+    expect(within(umschalter).getByRole('link', { name: 'Dokumente' })).toHaveAttribute('aria-current', 'page');
+    expect(document.title).toBe('Dokumente — KI-Enzyklopädie');
+    const main = within(screen.getByRole('main'));
+    expect(main.getByRole('heading', { level: 1 })).toHaveTextContent(/Zertifikate, wichtige Dokumente/);
+    for (const name of ['Zertifikate', 'Wichtige Dokumente', 'Aus dem Tagebuch']) {
+      expect(main.getByRole('region', { name })).toBeInTheDocument();
+    }
+    // Im Browser gibt es keinen Dateizugriff — Hinzufügen ist abgeschaltet und sagt, warum.
+    const knopf = await main.findByRole('button', { name: 'Zertifikate: Datei hinzufügen' });
+    await waitFor(() => expect(knopf).toHaveAttribute('title', expect.stringMatching(/nur in der App/)));
+    expect(knopf).toBeDisabled();
+    expect(screen.getByText('0 Dokumente', { selector: 'footer span' })).toBeInTheDocument();
+  });
+
+  it('zeigt den Bestand in Abteilungen, im Verzeichnis und in der Suche', async () => {
+    bestand();
+    render(<App />);
+    setzeHash('#/dokumente');
+    const main = within(screen.getByRole('main'));
+    const zertifikate = await main.findByRole('region', { name: 'Zertifikate' });
+    expect(await within(zertifikate).findByRole('link', { name: 'Arbeitszeugnis' })).toHaveAttribute('href', '#/dokumente/abc123xyz0');
+    expect(within(zertifikate).getByText('Vom ersten Praktikum.')).toBeInTheDocument();
+    expect(within(zertifikate).getByText('2 KB')).toBeInTheDocument();
+    const tagebuch = main.getByRole('region', { name: 'Aus dem Tagebuch' });
+    expect(within(tagebuch).getByRole('link', { name: 'Samstag, 26. September 2026' })).toHaveAttribute('href', '#/tagebuch/2026-09-26');
+    expect(within(tagebuch).getByRole('link', { name: 'Folien.pptx' })).toBeInTheDocument();
+
+    const verzeichnis = screen.getByRole('navigation', { name: 'Dokumentenverzeichnis' });
+    expect(within(verzeichnis).getByRole('link', { name: 'Übersicht' })).toHaveAttribute('aria-current', 'page');
+    expect(within(within(verzeichnis).getByRole('region', { name: /Wichtige Dokumente/ })).getAllByRole('link')).toHaveLength(1);
+    expect(screen.getByText('3 Dokumente', { selector: 'footer span' })).toBeInTheDocument();
+
+    const feld = screen.getByRole('searchbox', { name: 'Dokumente suchen' });
+    fireEvent.change(feld, { target: { value: 'praktikum' } });
+    const treffer = within(screen.getByRole('navigation', { name: 'Suchergebnisse in Dokumenten' })).getAllByRole('link');
+    expect(treffer.map((t) => t.getAttribute('href'))).toEqual(['#/dokumente/abc123xyz1', '#/dokumente/abc123xyz0']);
+    expect(treffer[0].querySelector('mark')).toHaveTextContent('Praktikum');
+    fireEvent.change(feld, { target: { value: 'gibtsnicht' } });
+    expect(screen.getByText('Kein Dokument zu „gibtsnicht“.')).toBeInTheDocument();
+    fireEvent.keyDown(feld, { key: 'Escape' });
+    expect(screen.getByRole('navigation', { name: 'Dokumentenverzeichnis' })).toBeInTheDocument();
+  });
+
+  it('öffnet ein Dokument: Name, Notiz und Abteilung ändern sich dauerhaft', async () => {
+    bestand();
+    render(<App />);
+    setzeHash('#/dokumente/abc123xyz2');
+    const artikel = within(await screen.findByRole('article'));
+    expect(artikel.getByRole('heading', { level: 1, name: 'Folien.pptx' })).toBeInTheDocument();
+    await waitFor(() => expect(document.title).toBe('Folien.pptx · Dokumente — KI-Enzyklopädie'));
+    expect(artikel.getByRole('link', { name: 'Samstag, 26. September 2026' })).toHaveAttribute('href', '#/tagebuch/2026-09-26');
+    expect(artikel.getByText('3 MB')).toBeInTheDocument();
+    expect(artikel.getByText(/Für diesen Dateityp gibt es keine Vorschau/)).toBeInTheDocument();
+    expect(within(screen.getByRole('navigation', { name: 'Dokumentenverzeichnis' })).getByRole('link', { current: 'page' })).toHaveTextContent(
+      'Folien.pptx',
+    );
+
+    const name = artikel.getByRole('textbox', { name: 'Name' });
+    await waitFor(() => expect(name).toBeEnabled());
+    fireEvent.change(name, { target: { value: 'Workshop-Folien' } });
+    expect(artikel.getByText('Ungesichert …')).toBeInTheDocument();
+    fireEvent.blur(name);
+    await waitFor(() => expect(gespeichert().find((d) => d.id === 'abc123xyz2')!.name).toBe('Workshop-Folien'));
+    expect(artikel.getByRole('heading', { level: 1, name: 'Workshop-Folien' })).toBeInTheDocument();
+
+    const notiz = artikel.getByRole('textbox', { name: 'Notiz' });
+    fireEvent.change(notiz, { target: { value: 'Stand nach dem Termin.' } });
+    fireEvent.blur(notiz);
+    await waitFor(() => expect(gespeichert().find((d) => d.id === 'abc123xyz2')!.notiz).toBe('Stand nach dem Termin.'));
+
+    // Hängt an einem Tag → alle drei Abteilungen stehen zur Wahl; der Tag bleibt beim Wechsel.
+    const wahl = artikel.getByRole('radiogroup', { name: 'Abteilung' });
+    expect(within(wahl).getAllByRole('radio').map((r) => r.textContent)).toEqual(['Zertifikate', 'Wichtige Dokumente', 'Aus dem Tagebuch']);
+    expect(within(wahl).getByRole('radio', { name: 'Aus dem Tagebuch' })).toBeChecked();
+    fireEvent.click(within(wahl).getByRole('radio', { name: 'Zertifikate' }));
+    await waitFor(() => expect(gespeichert().find((d) => d.id === 'abc123xyz2')).toMatchObject({ art: 'zertifikat', tag: '2026-09-26' }));
+    expect(artikel.getByText(/^Gespeichert/)).toBeInTheDocument();
+
+    // Ohne Tag gibt es „Aus dem Tagebuch“ nicht zur Wahl.
+    setzeHash('#/dokumente/abc123xyz0');
+    const zweites = within(await screen.findByRole('article'));
+    expect(within(zweites.getByRole('radiogroup', { name: 'Abteilung' })).getAllByRole('radio')).toHaveLength(2);
+    expect(zweites.getByText(/Die Vorschau gibt es in der App/)).toBeInTheDocument();
+  });
+
+  it('entfernt erst nach Rückfrage — und dann endgültig', async () => {
+    bestand();
+    const frage = vi.spyOn(dialoge, 'frageEntfernen').mockResolvedValueOnce(false).mockResolvedValueOnce(true);
+    render(<App />);
+    setzeHash('#/dokumente/abc123xyz1');
+    const artikel = within(await screen.findByRole('article'));
+    const knopf = artikel.getByRole('button', { name: 'Entfernen …' });
+    await waitFor(() => expect(knopf).toBeEnabled());
+
+    fireEvent.click(knopf);
+    await waitFor(() => expect(frage).toHaveBeenCalledWith('Praktikumsvertrag.docx'));
+    expect(gespeichert()).toHaveLength(3);
+    expect(screen.getByRole('article')).toBeInTheDocument();
+
+    fireEvent.click(knopf);
+    await waitFor(() => expect(gespeichert().map((d) => d.id)).toEqual(['abc123xyz0', 'abc123xyz2']));
+    // Danach steht die Übersicht; der alte Link führt ins Leere — und sagt es.
+    await waitFor(() => expect(window.location.hash).toBe('#/dokumente'));
+    setzeHash('#/dokumente');
+    expect(screen.getByText('2 Dokumente', { selector: 'footer span' })).toBeInTheDocument();
+    setzeHash('#/dokumente/abc123xyz1');
+    expect(await screen.findByRole('heading', { level: 1, name: 'Dieses Dokument gibt es nicht.' })).toBeInTheDocument();
+    setzeHash('#/dokumente/kaputt');
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Diese Adresse gibt es nicht.');
+  });
+
+  it('importiert über die Dateiauswahl, öffnet und zeigt im Ordner', async () => {
+    const s = fakeSpeicher([ZEUGNIS]);
+    konfiguriereDokumente(s);
+    const auswahl = vi
+      .spyOn(dialoge, 'waehleDateien')
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce(['C:\\Users\\x\\Desktop\\Urkunde KI.pdf', 'C:\\Users\\x\\Desktop\\Gesperrt.pdf']);
+    s.unlesbar.add('C:\\Users\\x\\Desktop\\Gesperrt.pdf');
+    render(<App />);
+    setzeHash('#/dokumente');
+    const main = within(screen.getByRole('main'));
+    const knopf = await main.findByRole('button', { name: 'Zertifikate: Datei hinzufügen' });
+    await waitFor(() => expect(knopf).toBeEnabled());
+
+    // Abgebrochene Auswahl: nichts passiert.
+    fireEvent.click(knopf);
+    await waitFor(() => expect(auswahl).toHaveBeenCalledTimes(1));
+    expect(s.importiert).toEqual([]);
+
+    fireEvent.click(knopf);
+    const zertifikate = main.getByRole('region', { name: 'Zertifikate' });
+    expect(await within(zertifikate).findByRole('link', { name: 'Urkunde KI.pdf' })).toBeInTheDocument();
+    await waitFor(() => expect(s.geschrieben).toHaveLength(1));
+    expect(s.geschrieben[0].dokumente.map((d) => [d.name, d.art, d.tag])).toEqual([
+      ['Arbeitszeugnis', 'zertifikat', null],
+      ['Urkunde KI.pdf', 'zertifikat', null],
+    ]);
+    expect(await main.findByRole('alert')).toHaveTextContent('1 von 2 Dateien hinzugefügt. Nicht hinzugefügt — Gesperrt.pdf: Zugriff verweigert');
+    fireEvent.click(main.getByRole('button', { name: 'Meldung schließen' }));
+    expect(main.queryByRole('alert')).not.toBeInTheDocument();
+    expect(screen.getByText('2 Dokumente', { selector: 'footer span' })).toHaveAttribute('title', 'Gespeichert in C:\\Test\\dokumente');
+
+    fireEvent.click(within(zertifikate).getByRole('button', { name: 'Arbeitszeugnis öffnen' }));
+    await waitFor(() => expect(s.geoeffnet).toEqual(['abc123xyz0']));
+    setzeHash('#/dokumente/abc123xyz0');
+    const artikel = within(await screen.findByRole('article'));
+    fireEvent.click(artikel.getByRole('button', { name: 'Im Ordner zeigen' }));
+    await waitFor(() => expect(s.gezeigt).toEqual(['abc123xyz0']));
+    // PDF → Vorschau im Rahmen, Adresse vom Speicher.
+    expect(await artikel.findByTitle('Vorschau: Arbeitszeugnis')).toHaveAttribute('src', 'asset://abc123xyz0');
+  });
+
+  it('sperrt den Bereich nach einem Ladefehler', async () => {
+    const s = fakeSpeicher([ZEUGNIS]);
+    s.ladeFehler = new Error('dokumente.json ist nicht lesbar (Datei ist leer). Sicherungskopie: dokumente.bak.json im selben Ordner.');
+    konfiguriereDokumente(s);
+    render(<App />);
+    setzeHash('#/dokumente');
+    const main = within(screen.getByRole('main'));
+    expect(await main.findByRole('alert')).toHaveTextContent(/konnten nicht geladen werden.*dokumente\.bak\.json.*Es wird nichts überschrieben/);
+    expect(main.getByRole('button', { name: 'Zertifikate: Datei hinzufügen' })).toBeDisabled();
+    s.ladeFehler = null;
+    fireEvent.click(main.getByRole('button', { name: 'Erneut versuchen' }));
+    expect(await main.findByRole('link', { name: 'Arbeitszeugnis' })).toBeInTheDocument();
+    expect(s.geschrieben).toHaveLength(0);
+  });
+});
+
+describe('Anhänge im Tagebuch', () => {
+  beforeEach(frisch);
+  afterEach(() => {
+    cleanup();
+    vi.restoreAllMocks();
+  });
+
+  const anhang = (id: string, name: string, tag: string, zeit: string, art: 'anhang' | 'zertifikat' = 'anhang') => ({
+    id,
+    datei: `${id}_${name}`,
+    name,
+    art,
+    tag,
+    notiz: '',
+    hinzugefuegt: zeit,
+    groesse: 4096,
+    typ: name.split('.').pop()!,
+  });
+
+  it('hängt Dateien an den Tag, zeigt die Klammer im Kalender und sammelt sie im Dokumente-Bereich', async () => {
+    const s = fakeSpeicher([
+      anhang('tag0000001', 'Agenda.pdf', '2026-09-26', '2026-09-26T08:00:00.000Z'),
+      anhang('tag0000002', 'Urkunde.pdf', '2026-09-10', '2026-09-10T08:00:00.000Z', 'zertifikat'),
+    ]);
+    konfiguriereDokumente(s);
+    window.localStorage.setItem(
+      BROWSER_KEY,
+      JSON.stringify({ version: 1, tage: { '2026-09-26': { text: 'Workshop.', markiert: false, ereignis: '', geaendert: '' } } }),
+    );
+    vi.spyOn(dialoge, 'waehleDateien').mockResolvedValue(['C:\\x\\Flipchart.jpg']);
+    const frage = vi.spyOn(dialoge, 'frageEntfernen').mockResolvedValue(true);
+    render(<App />);
+    setzeHash('#/tagebuch/2026-09-26');
+
+    const block = await screen.findByRole('region', { name: 'Anhänge' });
+    expect(await within(block).findByRole('link', { name: 'Agenda.pdf' })).toHaveAttribute('href', '#/dokumente/tag0000001');
+    expect(within(block).getAllByRole('listitem')).toHaveLength(1);
+    expect(screen.getByText('Anhänge', { selector: 'dt' }).nextElementSibling).toHaveTextContent('1');
+
+    // Kalender: der Tag und der 10. tragen die Klammer; ein Tag ohne Text steht trotzdem in der Monatsliste.
+    const kalender = screen.getByLabelText('Kalender');
+    expect(within(kalender).getByRole('link', { current: 'date' })).toHaveAccessibleName(/Eintrag vorhanden, 1 Anhang/);
+    expect(within(kalender).getByRole('link', { current: 'date' }).className).toContain('tag--anhang');
+    expect(within(kalender).getByRole('link', { name: /10\. September 2026, 1 Anhang/ })).toBeInTheDocument();
+    expect(within(kalender).getByRole('link', { name: /^Freitag, 11\. September 2026$/ }).className).not.toContain('tag--anhang');
+    const monat = screen.getByRole('region', { name: /Einträge im Monat/ });
+    expect(within(monat).getAllByRole('link').map((a) => a.getAttribute('href'))).toEqual(['#/tagebuch/2026-09-10', '#/tagebuch/2026-09-26']);
+    expect(within(monat).getByRole('link', { name: /Urkunde\.pdf.*1 Anhang/ })).toBeInTheDocument();
+
+    // Hinzufügen: die Datei hängt am Tag und landet in „Aus dem Tagebuch“.
+    const hinzu = within(block).getByRole('button', { name: /Datei hinzufügen/ });
+    await waitFor(() => expect(hinzu).toBeEnabled());
+    fireEvent.click(hinzu);
+    expect(await within(block).findByRole('link', { name: 'Flipchart.jpg' })).toBeInTheDocument();
+    await waitFor(() => expect(s.geschrieben).toHaveLength(1));
+    expect(s.geschrieben[0].dokumente[2]).toMatchObject({ name: 'Flipchart.jpg', art: 'anhang', tag: '2026-09-26' });
+    expect(within(kalender).getByRole('link', { current: 'date' })).toHaveAccessibleName(/2 Anhänge/);
+
+    fireEvent.click(within(block).getByRole('button', { name: 'Agenda.pdf öffnen' }));
+    await waitFor(() => expect(s.geoeffnet).toEqual(['tag0000001']));
+
+    // Entfernen nach Rückfrage.
+    fireEvent.click(within(block).getByRole('button', { name: 'Agenda.pdf entfernen' }));
+    await waitFor(() => expect(within(block).queryByRole('link', { name: 'Agenda.pdf' })).not.toBeInTheDocument());
+    expect(frage).toHaveBeenCalledWith('Agenda.pdf');
+    expect(s.ordner.has('tag0000001')).toBe(false);
+
+    setzeHash('#/dokumente');
+    const main = within(screen.getByRole('main'));
+    const gesammelt = main.getByRole('region', { name: 'Aus dem Tagebuch' });
+    expect(within(gesammelt).getByRole('link', { name: 'Flipchart.jpg' })).toBeInTheDocument();
+    // Das Zertifikat hängt am 10.09. und steht bei den Zertifikaten — mit Link zum Tag.
+    const zertifikate = main.getByRole('region', { name: 'Zertifikate' });
+    expect(within(zertifikate).getByRole('link', { name: /10\.09\.2026/ })).toHaveAttribute('href', '#/tagebuch/2026-09-10');
+  });
+
+  it('bietet im Browser kein Hinzufügen an, zeigt aber den Bestand', async () => {
+    window.localStorage.setItem(
+      DOKUMENTE_KEY,
+      JSON.stringify({ version: 1, dokumente: [anhang('tag0000001', 'Agenda.pdf', '2026-09-26', '2026-09-26T08:00:00.000Z')] }),
+    );
+    render(<App />);
+    setzeHash('#/tagebuch/2026-09-26');
+    const block = await screen.findByRole('region', { name: 'Anhänge' });
+    expect(await within(block).findByRole('link', { name: 'Agenda.pdf' })).toBeInTheDocument();
+    expect(within(block).getByRole('button', { name: /Datei hinzufügen/ })).toBeDisabled();
+    expect(within(block).getByText('Anhänge lassen sich in der App hinzufügen.')).toBeInTheDocument();
+    expect(within(block).getByRole('button', { name: 'Agenda.pdf öffnen' })).toBeDisabled();
   });
 });

@@ -1,17 +1,18 @@
 import { enzyklopaedie } from '../inhalt';
-import { HREF_START, HREF_TAGEBUCH } from '../router';
+import { HREF_DOKUMENTE, HREF_START, HREF_TAGEBUCH } from '../router';
 import { schriftLabel, schriftStufen, setzeSchrift, useEinstellungen } from '../einstellungen';
 
-export type Bereich = 'enzyklopaedie' | 'tagebuch';
+export type Bereich = 'enzyklopaedie' | 'tagebuch' | 'dokumente';
 
 // Kopfzeile: Wortmarke (führt zur Übersicht), der Bereichs-Umschalter (Enzyklopädie /
-// Tagebuch — echte Links, damit Zurück/Vor funktionieren) und die eine Lese-
+// Tagebuch / Dokumente — echte Links, damit Zurück/Vor funktionieren) und die eine Lese-
 // Einstellung, die dauerhaft sichtbar sein muss — die Schriftgröße des Lesetexts.
 export function Kopf({ bereich }: { bereich: Bereich }) {
   const { schrift } = useEinstellungen();
   const bereiche: { id: Bereich; label: string; href: string }[] = [
     { id: 'enzyklopaedie', label: 'Enzyklopädie', href: HREF_START },
     { id: 'tagebuch', label: 'Tagebuch', href: HREF_TAGEBUCH },
+    { id: 'dokumente', label: 'Dokumente', href: HREF_DOKUMENTE },
   ];
   return (
     <header className="kopf">

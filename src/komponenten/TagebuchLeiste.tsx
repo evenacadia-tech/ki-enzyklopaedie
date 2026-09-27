@@ -1,7 +1,10 @@
 import { Fragment, useEffect, useMemo, useRef, useState, type KeyboardEvent, type RefObject } from 'react';
 import { hrefTagebuch } from '../router';
+import { nachTag } from '../dokumente/modell';
+import { ladeDokumente, useDokumente } from '../dokumente/zustand';
 import {
   FARBE_NAME,
+  LEER,
   MONATE_KURZ,
   WOCHENTAGE,
   baue,
@@ -30,6 +33,7 @@ import { exportDateiname, exportiereMarkdown, speichereExport } from '../tagebuc
 import { sucheTagebuch } from '../tagebuch/suche';
 import { tokenisiere } from '../suche/logic';
 import { ladeTagebuch, useTagebuch } from '../tagebuch/zustand';
+import { Klammer } from './DokumentTeile';
 import { Markiert } from './Markiert';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -37,7 +41,8 @@ import { Markiert } from './Markiert';
 // sechs Zeilen, mit Kalenderwoche) oder die Jahresübersicht (zwölf Monate mit
 // Zählern), der Hinweis auf das nächste Ereignis, darunter entweder die Treffer
 // der Suche oder die Einträge des Monats, die offenen Fragen und die markierten
-// Tage (in ihrer Farbe, nach Farbe filterbar); in der Fußzeile der Export. Jeder Tag ist ein echter Link
+// Tage (in ihrer Farbe, nach Farbe filterbar); in der Fußzeile der Export. Tage mit
+// Anhängen tragen eine Büroklammer — im Kalender und in der Monatsliste. Jeder Tag ist ein echter Link
 // (#/tagebuch/<datum>) — Zurück/Vor und Deep-Links funktionieren ohne eigene
 // Logik; Pfeiltasten wandern im Raster und über den Monatsrand hinaus.
 // ─────────────────────────────────────────────────────────────────────────────
@@ -64,9 +69,13 @@ type ExportLage = 'ruhe' | 'laeuft' | 'fertig';
 
 export function TagebuchLeiste({ datum, suchRef }: Props) {
   const z = useTagebuch();
+  const dok = useDokumente();
   useEffect(() => {
     void ladeTagebuch();
+    void ladeDokumente();
   }, []);
+  // Anhänge je Tag (gleich welcher Abteilung) — für Klammer, Monatsliste und Export.
+  const anhaenge = useMemo(() => new Map(nachTag(dok.dokumente).map((g) => [g.tag, g.dokumente])), [dok.dokumente]);
 
   // Das Datum kommt validiert aus dem Router.
   const teile = zerlege(datum)!;
@@ -93,13 +102,14 @@ export function TagebuchLeiste({ datum, suchRef }: Props) {
   const listeRef = useRef<HTMLElement>(null);
   const fokusZiel = useRef<string | null>(null);
 
+  // Ein Tag zählt zum Monat, wenn er einen Eintrag hat ODER wenn Dateien an ihm hängen.
   const imMonat = useMemo(
     () =>
-      sortierteTage(z.tage).filter((d) => {
+      [...new Set([...Object.keys(z.tage), ...anhaenge.keys()])].sort().filter((d) => {
         const t = zerlege(d)!;
         return t.jahr === sicht.jahr && t.monat === sicht.monat;
       }),
-    [z.tage, sicht.jahr, sicht.monat],
+    [z.tage, anhaenge, sicht.jahr, sicht.monat],
   );
   const markiert = useMemo(() => sortierteTage(z.tage).filter((d) => z.tage[d].markiert), [z.tage]);
   // Filter nach Farbe: nur sinnvoll, wenn mindestens zwei Farben benutzt sind. Verschwindet
@@ -184,7 +194,7 @@ export function TagebuchLeiste({ datum, suchRef }: Props) {
     setExportLage('laeuft');
     setExportFehler(null);
     try {
-      const ergebnis = await speichereExport(exportiereMarkdown(z.tage), exportDateiname());
+      const ergebnis = await speichereExport(exportiereMarkdown(z.tage, new Date(), anhaenge), exportDateiname());
       setExportLage(ergebnis === 'gespeichert' ? 'fertig' : 'ruhe');
     } catch (e) {
       setExportFehler(`Export fehlgeschlagen: ${e instanceof Error ? e.message : String(e)}`);
@@ -326,11 +336,13 @@ export function TagebuchLeiste({ datum, suchRef }: Props) {
               const hatText = e !== undefined && e.text.trim() !== '';
               const ereignis = e?.markiert === true;
               const istTreffer = sucht && trefferTage.has(zelle.datum);
+              const dateien = anhaenge.get(zelle.datum)?.length ?? 0;
               const label = [
                 formatiereTagLang(zelle.datum),
                 ereignis ? `Ereignis${e.ereignis.trim() ? ': ' + e.ereignis.trim() : ''}` : null,
                 ereignis ? `Farbe ${FARBE_NAME[e.farbe]}` : null,
                 hatText ? 'Eintrag vorhanden' : null,
+                dateien > 0 ? (dateien === 1 ? '1 Anhang' : `${dateien} Anhänge`) : null,
                 istTreffer ? 'Suchtreffer' : null,
               ]
                 .filter(Boolean)
@@ -353,6 +365,7 @@ export function TagebuchLeiste({ datum, suchRef }: Props) {
                       (zelle.datum === heuteIso ? ' tag--heute' : '') +
                       (hatText ? ' tag--eintrag' : '') +
                       (ereignis ? ' tag--ereignis' : '') +
+                      (dateien > 0 ? ' tag--anhang' : '') +
                       (istTreffer ? ' tag--treffer' : '') +
                       (sucht && !istTreffer ? ' tag--gedimmt' : '')
                     }
@@ -362,6 +375,7 @@ export function TagebuchLeiste({ datum, suchRef }: Props) {
                   >
                     <span className="tag__nr mono">{zerlege(zelle.datum)!.tag}</span>
                     <span className="tag__punkt" aria-hidden="true" />
+                    {dateien > 0 ? <Klammer className="tag__klammer" /> : null}
                   </a>
                 </Fragment>
               );
@@ -463,9 +477,13 @@ export function TagebuchLeiste({ datum, suchRef }: Props) {
               ) : (
                 <ol className="eintraege">
                   {imMonat.map((d) => {
-                    const e = z.tage[d];
+                    const e = z.tage[d] ?? LEER;
                     const aktiv = d === datum;
-                    const vorschauText = e.markiert && e.ereignis.trim() ? e.ereignis.trim() : ersteZeile(e.text) || 'Ereignis';
+                    const dateien = anhaenge.get(d) ?? [];
+                    const vorschauText =
+                      e.markiert && e.ereignis.trim()
+                        ? e.ereignis.trim()
+                        : ersteZeile(e.text) || (e.markiert ? 'Ereignis' : (dateien[0]?.name ?? ''));
                     return (
                       <li key={d}>
                         <a
@@ -479,6 +497,17 @@ export function TagebuchLeiste({ datum, suchRef }: Props) {
                             {e.markiert ? <span className="eintragzeile__ereignis" data-farbe={e.farbe} title="Ereignis" /> : null}
                             {vorschauText}
                           </span>
+                          {dateien.length > 0 ? (
+                            <span
+                              className="eintragzeile__anhang mono"
+                              role="img"
+                              aria-label={dateien.length === 1 ? '1 Anhang' : `${dateien.length} Anhänge`}
+                              title={dateien.map((x) => x.name).join('\n')}
+                            >
+                              <Klammer className="eintragzeile__klammer" />
+                              {dateien.length > 1 ? dateien.length : null}
+                            </span>
+                          ) : null}
                         </a>
                       </li>
                     );
@@ -576,7 +605,7 @@ export function TagebuchLeiste({ datum, suchRef }: Props) {
             type="button"
             className="fuss__knopf"
             onClick={() => void exportiere()}
-            disabled={exportLage === 'laeuft' || gesamt === 0}
+            disabled={exportLage === 'laeuft' || (gesamt === 0 && anhaenge.size === 0)}
             title="Alle Einträge als Markdown-Datei speichern"
           >
             {exportLage === 'fertig' ? 'Exportiert ✓' : exportLage === 'laeuft' ? 'Exportiert …' : 'Exportieren'}
