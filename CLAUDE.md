@@ -18,8 +18,11 @@ Speicherung reicht — kein Sync, kein wählbarer Speicherordner. Beauftragt fü
 Sitzung (Spezifikation in `docs/NEXT-SESSION.md`): (1) Tage im Kalender farblich
 markieren, gedeckte Töne passend zum Schema, ausdrücklich kein Rot/Grün/Blau; (2) Bereich
 „Dokumente“ mit Zertifikaten und wichtigen Dokumenten (Dateien in die App importieren);
-(3) Anhänge je Tagebuchtag, die im Dokumente-Bereich gesammelt erscheinen. Offen ohne
-Antwort: Artikel-Verknüpfung aus Tagebuchtagen (niedrige Priorität).
+(3) Anhänge je Tagebuchtag, die im Dokumente-Bereich gesammelt erscheinen. Produkt-
+Antworten dazu (27.09.2026): Farben ohne Legende („nur Farbe“); Entfernen löscht
+endgültig („entfernt ist entfernt“, Rückfrage vor dem Löschen bleibt); kein Ablaufdatum
+für Zertifikate; Vorschau von PDF und Bildern in der App: ja. Offen ohne Antwort:
+Artikel-Verknüpfung aus Tagebuchtagen (niedrige Priorität).
 
 **Design (User-Entscheid 26.09.2026):** Farbwelt = Windows-Terminal-Schema
 „Nakama Champagne Night“ (das Dirigenten-Terminal, NICHT das Nakama-Plugin-Design).

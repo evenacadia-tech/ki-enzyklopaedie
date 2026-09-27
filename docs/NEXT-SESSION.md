@@ -46,12 +46,12 @@ als Spezifikation ausgearbeitet.
 
 ## Auftrag A: Tage farblich markieren
 
-**Produkt.** Ein markierter Tag bekommt eine von fünf Farben. Die Farben sind gedeckte
-Töne aus der Champagne-Night-Welt, keine Signalfarben. Der User vergibt die Bedeutung
-selbst; damit sie nach Monaten noch lesbar ist, gibt es eine Legende mit benennbaren
-Farben (Empfehlung — siehe Fragen unten). Der bisherige Schalter „Besonderes Ereignis“
-bleibt der Einstieg: markiert = eine Farbe, Standard Gold (so bleiben alle bestehenden
-Markierungen unverändert).
+**Produkt (User-Antwort 27.09.2026: „nur Farbe“).** Ein markierter Tag bekommt eine von
+fünf Farben. Die Farben sind gedeckte Töne aus der Champagne-Night-Welt, keine
+Signalfarben. KEINE Legende, keine Namen je Farbe — der User weiß selbst, was eine Farbe
+bedeutet; die Ereignis-Bezeichnung trägt den Text. Der bisherige Schalter „Besonderes
+Ereignis“ bleibt der Einstieg: markiert = eine Farbe, Standard Gold (so bleiben alle
+bestehenden Markierungen unverändert).
 
 **Palette (Vorschlag, beim Umsetzen am Bildschirm gegen `#101010` prüfen — Zahl im
 Kalender muss bei 12,5 px lesbar sein, Kontrast ≥ 4,5:1; die fünf Punkte müssen sich bei
@@ -72,26 +72,23 @@ Regel: keine gesättigten Primärfarben; alle Töne mit ähnlicher Helligkeit, d
 **Datenmodell (`src/tagebuch/modell.ts`).** `Eintrag.farbe?: Farbe` mit
 `type Farbe = 'gold' | 'kupfer' | 'salbei' | 'schiefer' | 'altrosa'`. Bedeutung nur bei
 `markiert === true`; fehlt oder unbekannt → `'gold'` (`normalisiereDaten` toleriert).
-`istLeer` unverändert (eine Farbe allein macht keinen Eintrag). Legende:
-`TagebuchDaten.legende?: Partial<Record<Farbe, string>>` (Name je Farbe), im selben
-`tagebuch.json`, `version` bleibt 1 (tolerantes Lesen; alte Fassung würde die Legende beim
-Schreiben verlieren — auf einem Rechner egal). `aendereLegende(farbe, name)` im Zustand.
+`istLeer` unverändert (eine Farbe allein macht keinen Eintrag). Kein weiteres Feld,
+`version` bleibt 1.
 
 **Oberfläche.**
 - `TagebuchAnsicht`: unter dem Schalter eine Reihe aus fünf Farbpunkten
-  (`role="radiogroup"`, `aria-label` = Legendenname oder Farbname), nur sichtbar wenn
-  markiert. Marke „Ereignis“ im Pfad trägt die Farbe.
-- `TagebuchLeiste`: Kalenderzelle und Punkt in der Farbe; Legende unter dem Kalender
-  zeigt die BENUTZTEN Farben mit Namen (Klick auf den Namen → Inline-Eingabe, Enter
-  speichert, Esc verwirft). „Markierte Tage“: Punkt in Farbe; optional Filter-Chips je
-  Farbe über der Liste (billig, sinnvoll). Jahresübersicht: Zähler bleibt gesamt, Punkte
-  farbig wäre Spielerei — weglassen.
-- Export: `**Ereignis (Kupfer: Kundentermin):** …` — Legendenname mit ausgeben.
-- Tests: `normalisiereDaten` (unbekannte Farbe → gold, Legende), Zustand (Legende
-  schreiben), App-Test (Farbe wählen → Zelle trägt `data-farbe`, Legende zeigt Namen,
-  localStorage enthält `farbe`).
+  (`role="radiogroup"`, `aria-label` = Farbname), nur sichtbar wenn markiert. Marke
+  „Ereignis“ im Pfad trägt die Farbe.
+- `TagebuchLeiste`: Kalenderzelle und Punkt in der Farbe; die Legende unter dem Kalender
+  bleibt wie heute („Eintrag · Ereignis“). „Markierte Tage“: Punkt in Farbe; Filter-Chips
+  je benutzter Farbe über der Liste (billig, sinnvoll, ohne Namen). Jahresübersicht:
+  Zähler bleibt gesamt, farbige Punkte wären Spielerei — weglassen.
+- Export: `**Ereignis (Kupfer):** Kundentermin` — Farbname mit ausgeben, damit die
+  Markierung im Text nicht verloren geht.
+- Tests: `normalisiereDaten` (unbekannte Farbe → gold), App-Test (Farbe wählen → Zelle
+  trägt `data-farbe`, localStorage enthält `farbe`, Filter-Chip zeigt nur diese Tage).
 
-**Aufwand:** etwa eine halbe Sitzung, kein neuer Speicherort.
+**Aufwand:** weniger als eine halbe Sitzung, kein neuer Speicherort.
 
 ---
 
@@ -133,9 +130,11 @@ auflösen; nie einen Pfad aus dem Frontend als Ziel akzeptieren):**
   zusätzliche Capability — der JS-Weg `openPath` bräuchte `opener:allow-open-path` mit
   Scope, deshalb Rust).
 - `dokument_zeige(id)` — `app.opener().reveal_item_in_dir(pfad)`.
-- `dokument_entferne(id)` — verschiebt die Datei nach `dokumente/papierkorb/` (kein
-  endgültiges Löschen; hard rule „nie Nutzerdaten verlieren“). Index-Eintrag entfernt das
-  Frontend.
+- `dokument_entferne(id)` — löscht die Datei endgültig (`fs::remove_file`; User-Antwort
+  27.09.2026: „entfernt ist entfernt“, kein Papierkorb). Schutz gegen Fehlklicks bleibt
+  meine Sache: vorher Rückfrage über `ask` aus dem Dialog-Plugin („<Name> endgültig
+  entfernen? Die Kopie in der App wird gelöscht.“), Index-Eintrag erst entfernen, wenn das
+  Löschen gelungen ist. Das Original am Herkunftsort ist nie betroffen (Import kopiert).
 - Index über `json_lese`/`json_schreibe`.
 
 **Dateiauswahl.** `@tauri-apps/plugin-dialog` `open({ multiple: true, title, filters })`
@@ -151,14 +150,18 @@ Capability für `event:listen` liegt in `core:default` — beim Umsetzen mit `ta
 prüfen, ob der Listener ohne weitere Permission feuert. HTML5-Drag&Drop nutzt die App
 nirgends, es gibt also keinen Konflikt mit der Tauri-Abfangung.
 
-**Vorschau in der App (Stufe 3, optional).** `convertFileSrc(pfad)` aus
+**Vorschau in der App (Stufe 3, beauftragt — User-Antwort 27.09.2026: „ja“).**
+`convertFileSrc(pfad)` aus
 `@tauri-apps/api/core` + in `tauri.conf.json`
 `app.security.assetProtocol = { enable: true, scope: ["$APPDATA/dokumente/**"] }` +
 CSP-Ergänzung `img-src 'self' data: asset: http://asset.localhost; frame-src asset:
 http://asset.localhost` (Beispiel in `core.d.ts` Zeile ~324). Bilder als `<img>`, PDF als
-`<iframe>` über den eingebauten PDF-Viewer von WebView2 — **am Gerät prüfen**, sonst nur
-„Öffnen“. Der Rust-Test `csp_ist_gesetzt_und_lokal` verbietet pauschales `https:`, nicht
-`asset:` — trotzdem den Test um die Erwartung ergänzen.
+`<iframe>` über den eingebauten PDF-Viewer von WebView2 — **am Gerät prüfen**; zeigt
+WebView2 kein PDF an, bleibt für PDF nur „Öffnen“ und die Vorschau gilt für Bilder. Andere
+Typen (Office, Text) immer nur „Öffnen“. Der Rust-Test `csp_ist_gesetzt_und_lokal`
+verbietet pauschales `https:`, nicht `asset:` — trotzdem den Test um die Erwartung ergänzen.
+Zertifikate haben KEIN Ablaufdatum (User-Antwort 27.09.2026: „nein“) — sie sind nur eine
+Abteilung, keine eigene Datenstruktur.
 
 **Frontend.**
 - `src/dokumente/modell.ts` (Typen, `normalisiereIndex`, Sortierung, Gruppierung nach Art
@@ -190,24 +193,27 @@ http://asset.localhost` (Beispiel in `core.d.ts` Zeile ~324). Bilder als `<img>`
 **Reihenfolge (jeweils grün und nativ geprüft, bevor der nächste Schritt beginnt):**
 1. Auftrag A (Farben).
 2. B-Stufe 1: Rust-Commands + Index + Bereich Dokumente (Liste, Import per Dialog,
-   Öffnen, Im Ordner zeigen, Entfernen in den Papierkorb, Notiz/Name/Abteilung ändern).
+   Öffnen, Im Ordner zeigen, Entfernen mit Rückfrage, Notiz/Name/Abteilung ändern).
 3. B-Stufe 2: Anhänge je Tag, Klammer im Kalender, Export.
-4. B-Stufe 3: Drag & Drop, Vorschau (Asset-Protokoll), Suche im Dokumente-Bereich.
+4. B-Stufe 3: Vorschau (Asset-Protokoll, PDF und Bilder), Drag & Drop, Suche im
+   Dokumente-Bereich.
 5. Doku, Screenshots, Beweis, CLAUDE.md.
+
+Alle Produktfragen sind beantwortet — die nächste Sitzung beginnt ohne Rückfrage direkt
+mit Stufe 1.
 
 **Risiken.** Asset-Protokoll + CSP ist der fummeligste Teil (deshalb Stufe 3). Drag &
 Drop liefert Pfade nur nativ; im Browser-Preview gibt es keinen Import — die Tests laufen
 mit Fake-Speicher. Große Dateien werden kopiert, nicht eingebettet — kein Größenlimit
 nötig, aber die Größe anzeigen.
 
-## Fragen an den User zu Beginn (nur Produkt, kurz, keine Technik)
+## Antworten des Users (27.09.2026, wörtlich: „1. nur farbe 2. entfernt ist entfernt 3. nein 4. ja“)
 
-1. Farben: mit benennbarer Legende („Kupfer = Kundentermin“) — empfohlen — oder nur Farbe?
-2. Entfernen von Dokumenten: in einen Papierkorb-Ordner verschieben (empfohlen, nichts
-   geht verloren) statt endgültig löschen — einverstanden?
-3. Zertifikate: soll es ein Ablaufdatum mit Hinweis im Kalender geben? (optional)
-4. Vorschau in der App (PDF und Bilder direkt anzeigen) zusätzlich zu „Öffnen“ —
-   empfohlen, sofern WebView2 das PDF anzeigt.
+1. Farben: **nur Farbe**, keine Legende, keine Namen.
+2. Entfernen: **endgültig löschen**, kein Papierkorb (Rückfrage vor dem Löschen bleibt als
+   Schutz gegen Fehlklicks — technische Entscheidung, kein Produktwiderspruch).
+3. Zertifikate: **kein Ablaufdatum**.
+4. Vorschau in der App für PDF und Bilder: **ja**.
 
 ## Fallen, die heute bissen
 
