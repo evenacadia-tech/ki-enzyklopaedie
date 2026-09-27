@@ -19,6 +19,8 @@ export function fakeSpeicher(start: Dokument[] = []) {
     /** Quellen, deren Import scheitert. */
     unlesbar: new Set<string>(),
     loeschFehler: null as Error | null,
+    /** Kennungen, für die es keine Vorschau gibt (Datei fehlt, heißt nur .pdf). */
+    ohneVorschau: new Set<string>(),
     verzoegerung: null as null | (() => Promise<void>),
     async lade() {
       if (s.ladeFehler) throw s.ladeFehler;
@@ -50,6 +52,7 @@ export function fakeSpeicher(start: Dokument[] = []) {
       s.ordner.delete(id);
     },
     async vorschauUrl(id: string) {
+      if (s.ohneVorschau.has(id)) throw new Error('Die Datei heißt .pdf, ist aber kein PDF — keine Vorschau.');
       return `asset://${id}`;
     },
     async ort() {

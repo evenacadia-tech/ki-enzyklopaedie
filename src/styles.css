@@ -631,6 +631,12 @@ kbd {
   color: var(--text-3);
   white-space: nowrap;
 }
+/* In der schmalen Leiste kürzt sich die Zählung, nicht der Knopf daneben. */
+.leiste__fuss > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 
 /* ── Lesebühne ────────────────────────────────────────────────────────────── */
 
@@ -1320,8 +1326,9 @@ a.lesestrecke__link:hover {
   }
   .fakten {
     grid-column: 1 / -1;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 0 16px;
+    /* So viele Spalten, wie passen — mit Zeilenabstand, falls eine fünfte Angabe umbricht. */
+    grid-template-columns: repeat(auto-fit, minmax(128px, 1fr));
+    gap: 16px;
     border-top: 0;
   }
   .fakten__zeile {

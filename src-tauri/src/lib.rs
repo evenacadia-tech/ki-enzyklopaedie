@@ -14,7 +14,7 @@ use serde::Serialize;
 use std::collections::hash_map::RandomState;
 use std::fs;
 use std::hash::{BuildHasher, Hasher};
-use std::io::Write;
+use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
 use std::time::{SystemTime, UNIX_EPOCH};
 use tauri::{AppHandle, Manager};
@@ -304,6 +304,26 @@ fn importiere_in(dir: &Path, quelle: &Path) -> Result<Importiert, String> {
     })
 }
 
+/// Beginnt die Datei mit der Kennung eines PDF? Nur dann kommt sie in den Vorschau-Rahmen:
+/// das Asset-Protokoll bestimmt den Inhaltstyp am INHALT, eine als „.pdf“ benannte
+/// HTML-Datei würde dort sonst als Webseite dargestellt.
+fn ist_pdf(pfad: &Path) -> bool {
+    let mut anfang = Vec::with_capacity(5);
+    match fs::File::open(pfad) {
+        Ok(f) => f.take(5).read_to_end(&mut anfang).is_ok() && anfang == b"%PDF-",
+        Err(_) => false,
+    }
+}
+
+/// Der Pfad für die Vorschau — bei PDF nur, wenn die Datei wirklich eines ist.
+fn vorschau_pfad(dir: &Path, id: &str) -> Result<PathBuf, String> {
+    let pfad = finde_dokument(dir, id)?;
+    if endung(&pfad.to_string_lossy()) == "pdf" && !ist_pdf(&pfad) {
+        return Err("Die Datei heißt .pdf, ist aber kein PDF — keine Vorschau.".into());
+    }
+    Ok(pfad)
+}
+
 /// Löscht die Datei endgültig. Fehlt sie schon, gilt das als erledigt — sonst ließe
 /// sich ein verwaister Index-Eintrag nie entfernen.
 fn entferne_in(dir: &Path, id: &str) -> Result<(), String> {
@@ -325,10 +345,11 @@ fn dokument_importiere(app: AppHandle, quelle: String) -> Result<Importiert, Str
     importiere_in(&dokumentenordner(&app)?, Path::new(&quelle))
 }
 
-/// Voller Pfad eines Dokuments — für die Vorschau über das Asset-Protokoll.
+/// Voller Pfad eines Dokuments — für die Vorschau über das Asset-Protokoll. Eine Datei,
+/// die nur .pdf heißt, aber keines ist, bekommt keinen Pfad und damit keine Vorschau.
 #[tauri::command]
 fn dokument_pfad(app: AppHandle, id: String) -> Result<String, String> {
-    Ok(finde_dokument(&dokumentenordner(&app)?, &id)?
+    Ok(vorschau_pfad(&dokumentenordner(&app)?, &id)?
         .to_string_lossy()
         .into_owned())
 }
@@ -618,6 +639,37 @@ mod tests {
         entferne_in(&ziel, &d.id).unwrap();
         assert!(entferne_in(&ziel, "..\\..\\xx").is_err());
         assert!(original.exists());
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn vorschau_nur_fuer_echte_pdf() {
+        let dir = testordner("vorschau");
+        let quellen = dir.join("quellen");
+        let ziel = dir.join("dokumente");
+        fs::create_dir_all(&quellen).unwrap();
+        let lege_ab = |name: &str, inhalt: &[u8]| {
+            let p = quellen.join(name);
+            fs::write(&p, inhalt).unwrap();
+            importiere_in(&ziel, &p).unwrap()
+        };
+        let echt = lege_ab("Echt.pdf", b"%PDF-1.7 1 0 obj");
+        let falsch = lege_ab("Falsch.pdf", b"<html><script>alert(1)</script>");
+        let versteckt = lege_ab("Versteckt.PDF", b"<!-- %PDF-1.7 --><html>");
+        let leer = lege_ab("Leer.pdf", b"");
+        let bild = lege_ab("Bild.png", b"kein PDF, aber auch kein Rahmen");
+
+        assert!(ist_pdf(&ziel.join(&echt.datei)));
+        assert!(!ist_pdf(&ziel.join(&falsch.datei)));
+        assert!(!ist_pdf(&dir.join("fehlt.pdf")));
+        assert_eq!(vorschau_pfad(&ziel, &echt.id).unwrap(), ziel.join(&echt.datei));
+        for d in [&falsch, &versteckt, &leer] {
+            let fehler = vorschau_pfad(&ziel, &d.id).unwrap_err();
+            assert!(fehler.contains("kein PDF"), "{}: {fehler}", d.name);
+        }
+        // Bilder laufen über <img> — dort führt der Browser nichts aus.
+        assert!(vorschau_pfad(&ziel, &bild.id).is_ok());
+        assert!(vorschau_pfad(&ziel, "../../../a").is_err());
         let _ = fs::remove_dir_all(&dir);
     }
 

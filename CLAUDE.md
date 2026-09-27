@@ -1,25 +1,26 @@
 # KI-Enzyklopädie — Arbeitsregeln
 
 **Was:** Lese-App (Vite + React 19 + TypeScript, Tauri-2-Hülle) für den
-Enzyklopädie-Bereich der Akademie-App plus eigene Sammlungen (Strategie) und ein
-persönliches Tagebuch mit Kalender. Kein Quiz, kein RAG, kein Konto.
+Enzyklopädie-Bereich der Akademie-App plus eigene Sammlungen (Strategie, Psychologie), ein
+persönliches Tagebuch mit Kalender und eine Dokumentenablage (Zertifikate, wichtige
+Dokumente, Anhänge je Tagebuchtag). Kein Quiz, kein RAG, kein Konto.
 User-Entscheide 26.09.2026: „reine enzyklopädie app, kein RAG oder sonstige unnötige
 features“; später am selben Tag ergänzt um (1) mehr Wissensinhalt zum Thema Strategie
 und (2) eine Tagebuch-Funktion mit Kalenderübersicht, dauerhaft gespeichert, Tage für
-besondere Ereignisse markierbar. Persistenz gibt es deshalb genau vierfach: drei
+besondere Ereignisse markierbar. Persistenz gibt es genau fünffach: drei
 localStorage-Stände (Schrift, Register, gelesene Artikel — Letzteres seit 27.09.2026 als
-Lesezeichen für die Lesestrecken) und das Tagebuch. Ausbau 27.09.2026 (User: „ja leg
+Lesezeichen für die Lesestrecken), das Tagebuch und die Dokumente (Ordner + Verzeichnis). Ausbau 27.09.2026 (User: „ja leg
 los“ auf die Vorschlagsliste): Tagebuch-Suche, offene Fragen (Zeilen mit „?“), Rückblick,
 Jahresübersicht, Kalenderwochen, nächstes Ereignis, Markdown-Export, Sicherungskopie,
 Lesestrecke Vor/Zurück, Lesefortschritt, Scrollposition bei Zurück, Fensterlage merken.
 Bewusst NICHT gebaut: Textformatierung im Tagebuch, Statistiken/Streaks.
 User-Entscheide 27.09.2026 (später): Die App läuft hauptsächlich auf dem LAPTOP, lokale
-Speicherung reicht — kein Sync, kein wählbarer Speicherordner. Beauftragt für die nächste
-Sitzung (Spezifikation in `docs/NEXT-SESSION.md`): (1) Tage im Kalender farblich
-markieren, gedeckte Töne passend zum Schema, ausdrücklich kein Rot/Grün/Blau; (2) Bereich
-„Dokumente“ mit Zertifikaten und wichtigen Dokumenten (Dateien in die App importieren);
-(3) Anhänge je Tagebuchtag, die im Dokumente-Bereich gesammelt erscheinen. Produkt-
-Antworten dazu (27.09.2026): Farben ohne Legende („nur Farbe“); Entfernen löscht
+Speicherung reicht — kein Sync, kein wählbarer Speicherordner. Gebaut am 27.09.2026
+(Auftrag des Users, Spezifikation war `docs/NEXT-SESSION.md`): (1) Tage im Kalender
+farblich markieren, gedeckte Töne passend zum Schema, ausdrücklich kein Rot/Grün/Blau;
+(2) Bereich „Dokumente“ mit Zertifikaten und wichtigen Dokumenten (Dateien in die App
+importieren); (3) Anhänge je Tagebuchtag, die im Dokumente-Bereich gesammelt erscheinen.
+Produkt-Antworten dazu (27.09.2026): Farben ohne Legende („nur Farbe“); Entfernen löscht
 endgültig („entfernt ist entfernt“, Rückfrage vor dem Löschen bleibt); kein Ablaufdatum
 für Zertifikate; Vorschau von PDF und Bildern in der App: ja. Offen ohne Antwort:
 Artikel-Verknüpfung aus Tagebuchtagen (niedrige Priorität).
@@ -39,7 +40,11 @@ npm test && npm run lint && npm run build
 
 Sichtbare Änderungen zusätzlich rendern und ansehen (`npm run preview` +
 Playwright-Screenshot oder `npm run tauri:dev`); grüne Tests sagen nichts über Lesbarkeit.
-Nach Änderungen an `src-tauri/` zusätzlich `cargo check` (in `src-tauri/`).
+Nach Änderungen an `src-tauri/` zusätzlich `cargo test` (in `src-tauri/`), danach
+`npm run tauri:build` und `npm run nativ:beweis` (gebaute .exe, echtes Fenster). Für
+alles, was Maus, Explorer oder Systemdialoge braucht (Hineinziehen, Öffnen, Rückfrage):
+`npm run os:beweis` — bewegt die Maus und öffnet Fenster, also nur laufen lassen, wenn
+niemand am Rechner arbeitet; `SKALIERUNG=1.5` davor rechnet wie ein skalierter Bildschirm.
 
 ## Inhalt
 
@@ -78,15 +83,22 @@ Zwei Quellen, ein Load-Guard (`src/inhalt/index.ts` → `vereinige` in
 - Modell/Kalender-Arithmetik in `src/tagebuch/modell.ts` (Woche ab Montag, immer 42
   Zellen, Datumsrechnen in UTC, Anzeige lokal), Zustand mit verzögerter Sicherung in
   `zustand.ts` (500 ms nach der letzten Änderung, sofort bei Blur/Tageswechsel/Schließen).
-- Speicher: nativ `tagebuch.json` im App-Datenordner über eigene Tauri-Commands in
-  `src-tauri/src/lib.rs` (`tagebuch_lese`, `tagebuch_schreibe`, `tagebuch_pfad`;
+- Speicher: nativ `tagebuch.json` im App-Datenordner über die gemeinsamen JSON-Commands
+  in `src-tauri/src/lib.rs` (`json_lese`, `json_schreibe`, `json_pfad` — nehmen nur die
+  Namen `tagebuch.json` und `dokumente.json` an; Frontend-Seite `src/speicher/json.ts`;
   Windows: `%APPDATA%\de.evenacadia.ki-enzyklopaedie\tagebuch.json`). Schreiben ist
   atomar (`.tmp` + fsync + rename) und legt vorher `tagebuch.bak.json` ab — aber nur,
   wenn die bisherige Datei gültiges JSON ist (eine defekte Datei darf die Sicherung nicht
   überschreiben). Im Browser localStorage `ki-enzyklopaedie.tagebuch.v1`. Ein Ladefehler
   sperrt das Schreiben — nie eine leere Kopie über echte Daten schreiben; eine LEERE
-  Datei ist deshalb ein Fehler, nur eine FEHLENDE ein leeres Tagebuch (`parseDatei` in
-  `speicher.ts`). Datenformat `{ version: 1, tage }`.
+  Datei ist deshalb ein Fehler, nur eine FEHLENDE ein leeres Tagebuch (`parseJsonDatei`
+  in `src/speicher/json.ts`). Datenformat `{ version: 1, tage }`.
+- Farbe der Markierung: Feld `farbe` je Eintrag (`FARBEN` in `modell.ts`: gold, kupfer,
+  salbei, schiefer, altrosa; fehlend/unbekannt → gold, `version` bleibt 1). Bedeutung nur
+  bei `markiert`. Oberfläche: Attribut `data-farbe` → CSS-Variable `--ereignis`
+  (Tokens `--farbe-*` in `src/styles.css`). Keine Legende, keine Namen in der Oberfläche —
+  Namen nur als `aria-label` und im Export. Palette geprüft: alle Töne ≥ 5,8:1 gegen
+  `#101010`/`#1a1714`, kleinster Abstand untereinander 0,08 (OKLab); beim Ändern neu rechnen.
 - Routen `#/tagebuch` (heute) und `#/tagebuch/<YYYY-MM-DD>`; Tage sind Links.
 - Konventionen ohne neues Datenfeld: Zeilen mit „?“ am Anfang sind offene Fragen
   (`fragenImText`/`offeneFragen` in `modell.ts`); der Kalender zeigt ISO-Kalenderwochen
@@ -98,6 +110,40 @@ Zwei Quellen, ein Load-Guard (`src/inhalt/index.ts` → `vereinige` in
   (nur Sammlungen, nicht Grundlagen). „Weiter“ markiert den aktuellen Artikel als gelesen.
 - Scrollposition bei Zurück/Vor: Navigation API (`navigate`-Event, `navigationType ===
   'traverse'`) in `App.tsx`; ohne diese API (jsdom) beginnt jede Route oben.
+
+## Dokumente
+
+- Dateien liegen nativ in `%APPDATA%\de.evenacadia.ki-enzyklopaedie\dokumente\` als
+  `<id>_<Originalname>` (id: zehn Zeichen a–z, 0–9, vergibt Rust), das Verzeichnis daneben
+  als `dokumente.json` (`{ version: 1, dokumente }`, Sicherung `dokumente.bak.json`).
+  Importieren = KOPIEREN; das Original wird nie angefasst.
+- `art` (`zertifikat` · `dokument` · `anhang`) und `tag` (Tagebuchtag oder null) sind
+  getrennt: `tag` bestimmt, an welchem Tag das Dokument als Anhang erscheint, `art` die
+  Abteilung. `anhang` ohne Tag gibt es nicht (wird `dokument`).
+- Commands (`src-tauri/src/lib.rs`): `dokument_importiere(quelle)`, `dokument_pfad(id)`,
+  `dokument_oeffne(id)`, `dokument_zeige(id)`, `dokument_entferne(id)`, `dokumente_ordner`.
+  Das Frontend übergibt NIE einen Zielpfad, nur die Kennung; Rust sucht die Datei im
+  Ordner. Öffnen/Zeigen laufen über die Rust-Seite des Opener-Plugins (`OpenerExt`) — der
+  JS-Weg `openPath` bräuchte eine Capability mit Pfad-Scope. Ausführbare Typen (Liste
+  `AUSFUEHRBAR`) startet `dokument_oeffne` nicht.
+- Entfernen: erst die Datei (Rust), dann der Eintrag im Verzeichnis; vorher Rückfrage
+  (`frageEntfernen` in `dokumente/dialoge.ts`, nativ `ask` — läuft über den Command
+  `message`, den `dialog:default` erlaubt). Kein Papierkorb (User-Entscheid).
+- Vorschau: `convertFileSrc` + `assetProtocol` (Scope NUR `$APPDATA/dokumente/**`) + CSP
+  `img-src`/`frame-src` mit `asset: http://asset.localhost`. Cargo-Feature
+  `protocol-asset` an `tauri` ist dafür nötig. PDF läuft im eingebauten Betrachter von
+  WebView2 (`<iframe>`), am Gerät geprüft 27.09.2026. Das Asset-Protokoll bestimmt den
+  Inhaltstyp am INHALT der Datei, nicht an der Endung — `dokument_pfad` gibt für `.pdf`
+  deshalb nur dann einen Pfad heraus, wenn die Datei mit `%PDF-` beginnt (`ist_pdf`);
+  sonst stünde eine umbenannte HTML-Datei als Webseite im Rahmen. `sandbox` am Rahmen geht
+  nicht: der PDF-Betrachter lädt dann nicht. Bilder laufen über `<img>` (führt nichts aus).
+- Hineinziehen: `getCurrentWebview().onDragDropEvent` (`dokumente/ablage.ts`), Fallzonen
+  über `data-ablage`; Position kommt in physischen Pixeln (durch `devicePixelRatio`
+  teilen). Feuert mit `core:default`, keine weitere Permission nötig.
+- Zustand `dokumente/zustand.ts` nach dem Muster des Tagebuchs: Ladefehler sperrt alles,
+  Import/Entfernen schreiben sofort, Name/Notiz/Abteilung verzögert.
+- Browser/Preview: nur das Verzeichnis (localStorage `ki-enzyklopaedie.dokumente.v1`),
+  keine Dateien — Tests nutzen `src/test/fake-dokumente.ts`.
 
 ## Fallen
 
@@ -125,3 +171,21 @@ Zwei Quellen, ein Load-Guard (`src/inhalt/index.ts` → `vereinige` in
 - Bash-Heredocs mit langen TS-Dateien scheitern hier gelegentlich am Shell-Parser;
   mehrzeilige Quelltexte über das Write-Tool schreiben.
 - `.gitignore` deckt `src-tauri/target` und `src-tauri/gen/schemas` (beides generiert).
+- jsdom führt einen Klick auf einen Link (`<a href="#/…">`) erst in einer späteren Task
+  aus. Folgt danach ein weiterer Test, fällt die Navigation in DIESEN und wechselt
+  mittendrin die Route. `frisch()` in `src/App.test.tsx` wartet deshalb vor jedem Test
+  eine Task ab — neue Testblöcke dort immer mit `beforeEach(frisch)` beginnen.
+- PowerShell unterscheidet bei Variablen keine Groß- und Kleinschreibung: `$h` und `$H`,
+  `$x` und `$X`, `$bedingung` und `$Bedingung` sind dieselbe Variable (auch über
+  Funktionsgrenzen, dynamischer Gültigkeitsbereich). Typografische Anführungszeichen
+  („ “) beenden in PowerShell eine Zeichenkette.
+- Das Playwright-Plugin schreibt nur unterhalb des Projektordners; Arbeitsbilder nach
+  `.playwright-mcp/` (ignoriert), Bilder für die README nach `docs/bilder/`.
+- `vite preview` und `page.goto` mit bloß geändertem Hash laden die Seite NICHT neu —
+  nach einem Build einen Query-Parameter ändern (`/?v=2#/…`) oder neu laden.
+- `os:beweis` (simulierte Maus): Bilder lassen sich nur aus einem Explorer-Fenster
+  ziehen, das nicht kurz zuvor geschlossen und neu geöffnet wurde — deshalb benutzt der
+  Lauf EIN Fenster für beide Züge. Eigenheit des Prüfwerkzeugs, nicht der App (Tauri
+  wertet nur die Dateiliste aus). Der Explorer blendet Endungen aus (Eintrag heißt
+  „Urkunde“, nicht „Urkunde.pdf“); die Knöpfe der Rückfrage meldet Windows je nach
+  Zugangsweg als `Button` oder als `Pane`.

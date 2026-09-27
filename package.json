@@ -15,7 +15,8 @@
     "tauri:dev": "tauri dev",
     "tauri:build": "tauri build",
     "tauri:icon": "node scripts/gen-icon.mjs && tauri icon src-tauri/icon-src.png && node -e \"for (const d of ['src-tauri/icons/android','src-tauri/icons/ios']) require('fs').rmSync(d,{recursive:true,force:true})\"",
-    "nativ:beweis": "node scripts/nativ-beweis.mjs"
+    "nativ:beweis": "node scripts/nativ-beweis.mjs",
+    "os:beweis": "node scripts/os-beweis.mjs"
   },
   "dependencies": {
     "@fontsource-variable/geist": "^5.3.0",

@@ -5,8 +5,9 @@
 //   · Dokumente: Dateien über das Hineinziehen-Ereignis importieren → Kopie liegt in
 //     dokumente/, Eintrag in dokumente.json; Vorschau von Bild und PDF über das
 //     Asset-Protokoll; Anhang am Tagebuchtag; Entfernen löscht die Kopie;
-//   · Sperren: ausführbare Dateien startet die App nicht, fremde Kennungen und
-//     Dateinamen lehnt die Rust-Seite ab.
+//   · Sperren: ausführbare Dateien startet die App nicht, eine als .pdf benannte
+//     Webseite bekommt keine Vorschau, fremde Kennungen und Dateinamen lehnt die
+//     Rust-Seite ab.
 // Dazu Screenshots (Start, Artikel, Tagebuch, Dokumente). Alle Dateien des Nutzers im
 // App-Datenordner werden vorher gesichert und danach byte-genau zurückgespielt; was der
 // Beweis in dokumente/ anlegt, räumt er wieder weg.
@@ -16,8 +17,8 @@
 // BEWEIS_OEFFNEN=1 prüft zusätzlich „Öffnen“ und „Im Ordner zeigen“ — das startet das
 // Standardprogramm und den Explorer (Fenster bleiben offen), deshalb nur auf Wunsch.
 // Die Rückfrage vor dem Entfernen ist ein Dialog des Betriebssystems und per Debug-Port
-// nicht bedienbar; entfernt wird hier über den Command, die Rückfrage prüfen die
-// Komponententests.
+// nicht bedienbar; entfernt wird hier über den Command. Rückfrage, echtes Ziehen aus dem
+// Explorer und Öffnen prüft `npm run os:beweis` (bewegt die Maus, öffnet Fenster).
 //
 // Voraussetzung: Windows, gebaute src-tauri/target/release/ki-enzyklopaedie.exe, keine
 // laufende Instanz der App.
@@ -81,7 +82,10 @@ const BILD = join(quellen, 'Beweis Zertifikat.png');
 const PDF = join(quellen, 'Beweis Vertrag.pdf');
 const NOTIZ = join(quellen, 'Beweis Anhang.txt');
 const SKRIPT = join(quellen, 'Beweis Start.bat');
+const FALSCH = join(quellen, 'Beweis Falsch.pdf');
 copyFileSync(resolve('src-tauri/icons/128x128@2x.png'), BILD);
+// Heißt .pdf, ist aber eine Webseite — darf nie im Vorschau-Rahmen landen.
+writeFileSync(FALSCH, '<html><body><script>document.title = "darf nie laufen"</script></body></html>');
 writeFileSync(PDF, minimalesPdf('Nativer Beweis: PDF-Vorschau in der App'));
 writeFileSync(NOTIZ, 'Anhang zum Tagebuchtag.\n');
 writeFileSync(SKRIPT, '@echo Dieser Text darf nie erscheinen.\r\n');
@@ -355,7 +359,10 @@ try {
   await page.screenshot({ path: join(ausgabe, 'nativ-dokument-pdf.png') });
 
   // 8. Sperren der Rust-Seite.
+  const falsch = await rufe('dokument_importiere', { quelle: FALSCH });
+  pruefe(falsch.ok, `Import der falschen PDF-Datei schlug fehl: ${falsch.fehler}`);
   const gesperrt = {
+    falschesPdfInDieVorschau: await rufe('dokument_pfad', { id: falsch.wert.id }),
     skriptStarten: await rufe('dokument_oeffne', { id: skript.id }),
     fremdeKennung: await rufe('dokument_pfad', { id: '..\\..\\tagebuch' }),
     unbekannteKennung: await rufe('dokument_pfad', { id: 'zzzzzzzzzz' }),
@@ -366,6 +373,7 @@ try {
   bericht.gesperrt = Object.fromEntries(Object.entries(gesperrt).map(([k, v]) => [k, v.ok ? 'NICHT GESPERRT' : v.fehler]));
   for (const [name, v] of Object.entries(gesperrt)) pruefe(!v.ok, `Sperre greift nicht: ${name}`);
   pruefe(!existsSync(join(appData, 'fremd.json')), 'Eine fremde Datei wurde geschrieben.');
+  pruefe((await rufe('dokument_entferne', { id: falsch.wert.id })).ok, 'Die falsche PDF-Datei ließ sich nicht entfernen.');
 
   if (mitOeffnen) {
     bericht.oeffnen = {

@@ -48,7 +48,7 @@ function statusText(z: DokumenteZustand): string {
   }
 }
 
-function Vorschau({ d }: { d: Dokument }) {
+function Vorschau({ d, dateien }: { d: Dokument; dateien: boolean }) {
   const art = vorschauArt(d.typ);
   const [url, setUrl] = useState<string | null>(null);
   const [geladen, setGeladen] = useState(false);
@@ -90,11 +90,12 @@ function Vorschau({ d }: { d: Dokument }) {
     <div className="vorschau vorschau--ohne">
       <span className="vorschau__typ mono">{typLabel(d.typ)}</span>
       <span className="vorschau__text">
-        {kaputt
-          ? 'Die Vorschau lässt sich nicht anzeigen — „Öffnen“ startet das Standardprogramm.'
-          : art
-            ? 'Die Vorschau gibt es in der App. Im Browser liegt nur das Verzeichnis, keine Datei.'
-            : 'Für diesen Dateityp gibt es keine Vorschau — „Öffnen“ startet das Standardprogramm.'}
+        {!art
+          ? 'Für diesen Dateityp gibt es keine Vorschau — „Öffnen“ startet das Standardprogramm.'
+          : dateien
+            ? // In der App: Datei fehlt, ist beschädigt oder heißt nur .pdf.
+              'Die Vorschau lässt sich nicht anzeigen — „Öffnen“ startet das Standardprogramm.'
+            : 'Die Vorschau gibt es in der App. Im Browser liegt nur das Verzeichnis, keine Datei.'}
       </span>
     </div>
   );
@@ -216,7 +217,7 @@ export function DokumentAnsicht({ id }: { id: string }) {
 
       <div className="tagebuch__raster">
         <div className="tagebuch__inhalt">
-          <Vorschau d={d} />
+          <Vorschau d={d} dateien={z.dateien} />
 
           <div>
             <label className="tagebuch__label mono" htmlFor="dokument-name">

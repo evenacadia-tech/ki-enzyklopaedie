@@ -617,6 +617,32 @@ describe('Dokumente', () => {
     expect(await artikel.findByTitle('Vorschau: Arbeitszeugnis')).toHaveAttribute('src', 'asset://abc123xyz0');
   });
 
+  it('zeigt Bilder im Bild, PDF im Rahmen — und nichts, wenn die Datei nur so heißt', async () => {
+    const FOTO = { ...ZEUGNIS, id: 'abc123xyz7', datei: 'abc123xyz7_Foto.JPG', name: 'Foto.JPG', typ: 'jpg' };
+    const FALSCH = { ...ZEUGNIS, id: 'abc123xyz8', datei: 'abc123xyz8_Falsch.pdf', name: 'Falsch.pdf' };
+    const s = fakeSpeicher([ZEUGNIS, FOTO, FALSCH]);
+    s.ohneVorschau.add('abc123xyz8');
+    konfiguriereDokumente(s);
+    render(<App />);
+
+    setzeHash('#/dokumente/abc123xyz7');
+    const bild = await screen.findByRole('img', { name: 'Vorschau: Foto.JPG' });
+    expect(bild).toHaveAttribute('src', 'asset://abc123xyz7');
+    // Lässt sich das Bild nicht laden, tritt die Kachel an seine Stelle.
+    fireEvent.error(bild);
+    expect(screen.queryByRole('img', { name: 'Vorschau: Foto.JPG' })).not.toBeInTheDocument();
+    expect(screen.getByText(/Die Vorschau lässt sich nicht anzeigen/)).toBeInTheDocument();
+
+    setzeHash('#/dokumente/abc123xyz0');
+    expect(await screen.findByTitle('Vorschau: Arbeitszeugnis')).toHaveAttribute('src', 'asset://abc123xyz0');
+
+    setzeHash('#/dokumente/abc123xyz8');
+    expect(await screen.findByText(/Die Vorschau lässt sich nicht anzeigen/)).toBeInTheDocument();
+    expect(screen.queryByTitle('Vorschau: Falsch.pdf')).not.toBeInTheDocument();
+    // Öffnen bleibt möglich — das Standardprogramm entscheidet selbst.
+    expect(within(screen.getByRole('article')).getByRole('button', { name: 'Öffnen' })).toBeEnabled();
+  });
+
   it('sperrt den Bereich nach einem Ladefehler', async () => {
     const s = fakeSpeicher([ZEUGNIS]);
     s.ladeFehler = new Error('dokumente.json ist nicht lesbar (Datei ist leer). Sicherungskopie: dokumente.bak.json im selben Ordner.');
