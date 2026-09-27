@@ -12,9 +12,14 @@ Lesezeichen für die Lesestrecken) und das Tagebuch. Ausbau 27.09.2026 (User: �
 los“ auf die Vorschlagsliste): Tagebuch-Suche, offene Fragen (Zeilen mit „?“), Rückblick,
 Jahresübersicht, Kalenderwochen, nächstes Ereignis, Markdown-Export, Sicherungskopie,
 Lesestrecke Vor/Zurück, Lesefortschritt, Scrollposition bei Zurück, Fensterlage merken.
-Bewusst NICHT gebaut: Kategorien/Tags über „Ereignis“ hinaus, Textformatierung im
-Tagebuch, Statistiken/Streaks. Offen (brauchen eine Antwort des Users): Tagebuch auf
-zwei Rechnern (Speicherordner wählbar) und Artikel-Verknüpfung aus Tagebuchtagen.
+Bewusst NICHT gebaut: Textformatierung im Tagebuch, Statistiken/Streaks.
+User-Entscheide 27.09.2026 (später): Die App läuft hauptsächlich auf dem LAPTOP, lokale
+Speicherung reicht — kein Sync, kein wählbarer Speicherordner. Beauftragt für die nächste
+Sitzung (Spezifikation in `docs/NEXT-SESSION.md`): (1) Tage im Kalender farblich
+markieren, gedeckte Töne passend zum Schema, ausdrücklich kein Rot/Grün/Blau; (2) Bereich
+„Dokumente“ mit Zertifikaten und wichtigen Dokumenten (Dateien in die App importieren);
+(3) Anhänge je Tagebuchtag, die im Dokumente-Bereich gesammelt erscheinen. Offen ohne
+Antwort: Artikel-Verknüpfung aus Tagebuchtagen (niedrige Priorität).
 
 **Design (User-Entscheid 26.09.2026):** Farbwelt = Windows-Terminal-Schema
 „Nakama Champagne Night“ (das Dirigenten-Terminal, NICHT das Nakama-Plugin-Design).
