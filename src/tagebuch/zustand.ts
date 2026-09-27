@@ -104,7 +104,7 @@ export function eintragFuer(datum: string): Eintrag {
 }
 
 /** Ändert einen Tag (leer gewordene Einträge verschwinden) und plant die Sicherung. */
-export function aendereEintrag(datum: string, patch: Partial<Pick<Eintrag, 'text' | 'markiert' | 'ereignis'>>): void {
+export function aendereEintrag(datum: string, patch: Partial<Pick<Eintrag, 'text' | 'markiert' | 'ereignis' | 'farbe'>>): void {
   if (zustand.status !== 'bereit') return;
   const neu: Eintrag = { ...eintragFuer(datum), ...patch, geaendert: uhr().toISOString() };
   const tage: Tage = { ...zustand.tage };

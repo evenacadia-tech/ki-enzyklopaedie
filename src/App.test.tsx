@@ -157,6 +157,63 @@ describe('Tagebuch', () => {
     expect(gespeichert.tage['2026-09-26'].markiert).toBe(true);
   });
 
+  it('färbt markierte Tage: Farbwahl, Zelle, Speicher und Filter nach Farbe', async () => {
+    window.localStorage.setItem(
+      BROWSER_KEY,
+      JSON.stringify({
+        version: 1,
+        tage: {
+          // Alte Markierung ohne Farbe → Gold.
+          '2026-09-10': { text: '', markiert: true, ereignis: 'Kickoff', geaendert: '' },
+          '2026-09-26': { text: 'Workshop-Tag.', markiert: true, ereignis: 'Strategie-Workshop', geaendert: '' },
+        },
+      }),
+    );
+    render(<App />);
+    setzeHash('#/tagebuch/2026-09-26');
+    const wahl = await screen.findByRole('radiogroup', { name: 'Farbe der Markierung' });
+    expect(within(wahl).getAllByRole('radio')).toHaveLength(5);
+    expect(within(wahl).getByRole('radio', { name: 'Gold' })).toBeChecked();
+    const kalender = screen.getByLabelText('Kalender');
+    expect(within(kalender).getByRole('link', { current: 'date' })).toHaveAttribute('data-farbe', 'gold');
+    // Nur eine Farbe benutzt → kein Filter.
+    expect(screen.queryByRole('group', { name: 'Markierte Tage nach Farbe filtern' })).not.toBeInTheDocument();
+
+    fireEvent.click(within(wahl).getByRole('radio', { name: 'Salbei' }));
+    expect(within(wahl).getByRole('radio', { name: 'Salbei' })).toBeChecked();
+    const zelle = within(kalender).getByRole('link', { current: 'date' });
+    expect(zelle).toHaveAttribute('data-farbe', 'salbei');
+    expect(zelle).toHaveAccessibleName(/Ereignis: Strategie-Workshop, Farbe Salbei/);
+    expect(within(kalender).getByRole('link', { name: /10\. September 2026/ })).toHaveAttribute('data-farbe', 'gold');
+    expect(screen.getByText('Ereignis', { selector: '.marke' })).toHaveAttribute('data-farbe', 'salbei');
+    await waitFor(() => expect(JSON.parse(window.localStorage.getItem(BROWSER_KEY)!).tage['2026-09-26'].farbe).toBe('salbei'));
+
+    // Pfeiltaste wählt die nächste Farbe.
+    fireEvent.keyDown(within(wahl).getByRole('radio', { name: 'Salbei' }), { key: 'ArrowRight' });
+    expect(within(wahl).getByRole('radio', { name: 'Schiefer' })).toBeChecked();
+    fireEvent.keyDown(within(wahl).getByRole('radio', { name: 'Schiefer' }), { key: 'ArrowLeft' });
+    expect(within(wahl).getByRole('radio', { name: 'Salbei' })).toBeChecked();
+
+    // Zwei Farben benutzt → Filter je Farbe; er zeigt nur die Tage dieser Farbe.
+    const markierte = screen.getByRole('region', { name: /Markierte Tage/ });
+    expect(within(markierte).getAllByRole('link')).toHaveLength(2);
+    const filter = within(markierte).getByRole('group', { name: 'Markierte Tage nach Farbe filtern' });
+    expect(within(filter).getAllByRole('button').map((b) => b.getAttribute('aria-label'))).toEqual(['Gold', 'Salbei']);
+    fireEvent.click(within(filter).getByRole('button', { name: 'Salbei' }));
+    expect(within(filter).getByRole('button', { name: 'Salbei' })).toHaveAttribute('aria-pressed', 'true');
+    const gefiltert = within(markierte).getAllByRole('link');
+    expect(gefiltert).toHaveLength(1);
+    expect(gefiltert[0]).toHaveAttribute('href', '#/tagebuch/2026-09-26');
+    expect(within(markierte).getByText('1 von 2')).toBeInTheDocument();
+    fireEvent.click(within(filter).getByRole('button', { name: 'Alle' }));
+    expect(within(markierte).getAllByRole('link')).toHaveLength(2);
+
+    // Markierung aus → Farbwahl verschwindet, die Zelle trägt keine Farbe mehr.
+    fireEvent.click(screen.getByRole('switch', { name: 'Besonderes Ereignis' }));
+    expect(screen.queryByRole('radiogroup', { name: 'Farbe der Markierung' })).not.toBeInTheDocument();
+    expect(within(kalender).getByRole('link', { current: 'date' })).not.toHaveAttribute('data-farbe');
+  });
+
   it('lädt gespeicherte Einträge und blättert zwischen ihnen', async () => {
     window.localStorage.setItem(
       BROWSER_KEY,

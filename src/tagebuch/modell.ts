@@ -6,6 +6,25 @@
 // verschieben. Die Woche beginnt am Montag.
 // ─────────────────────────────────────────────────────────────────────────────
 
+/** Die fünf Farben einer Markierung — gedeckte Töne, keine Signalfarben, ohne feste Bedeutung. */
+export const FARBEN = ['gold', 'kupfer', 'salbei', 'schiefer', 'altrosa'] as const;
+export type Farbe = (typeof FARBEN)[number];
+export const STANDARD_FARBE: Farbe = 'gold';
+
+/** Namen nur für Vorlesehilfen und den Export — die Oberfläche zeigt die Farbe, keinen Text. */
+export const FARBE_NAME: Readonly<Record<Farbe, string>> = {
+  gold: 'Gold',
+  kupfer: 'Kupfer',
+  salbei: 'Salbei',
+  schiefer: 'Schiefer',
+  altrosa: 'Altrosa',
+};
+
+/** Fehlende oder unbekannte Farbe → Gold (so bleiben alte Markierungen, wie sie waren). */
+export function normalisiereFarbe(v: unknown): Farbe {
+  return (FARBEN as readonly unknown[]).includes(v) ? (v as Farbe) : STANDARD_FARBE;
+}
+
 export interface Eintrag {
   /** Freier Text des Tages. */
   text: string;
@@ -13,6 +32,8 @@ export interface Eintrag {
   markiert: boolean;
   /** Kurzbezeichnung des Ereignisses (sinnvoll nur, wenn markiert). */
   ereignis: string;
+  /** Farbe der Markierung (Bedeutung nur, wenn markiert). */
+  farbe: Farbe;
   /** Zeitpunkt der letzten Änderung (ISO 8601). */
   geaendert: string;
 }
@@ -26,7 +47,13 @@ export interface TagebuchDaten {
 
 export const DATEN_VERSION = 1;
 
-export const LEER: Readonly<Eintrag> = Object.freeze({ text: '', markiert: false, ereignis: '', geaendert: '' });
+export const LEER: Readonly<Eintrag> = Object.freeze({
+  text: '',
+  markiert: false,
+  ereignis: '',
+  farbe: STANDARD_FARBE,
+  geaendert: '',
+});
 
 export const WOCHENTAGE = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'] as const;
 
@@ -182,6 +209,7 @@ export function normalisiereDaten(roh: unknown): TagebuchDaten {
           text: typeof w.text === 'string' ? w.text : '',
           markiert: w.markiert === true,
           ereignis: typeof w.ereignis === 'string' ? w.ereignis : '',
+          farbe: normalisiereFarbe(w.farbe),
           geaendert: typeof w.geaendert === 'string' ? w.geaendert : '',
         };
         if (!istLeer(e)) tage[datum] = e;
@@ -230,6 +258,13 @@ export function inTagenText(tage: number): string {
   if (tage <= 0) return 'heute';
   if (tage === 1) return 'morgen';
   return `in ${tage} Tagen`;
+}
+
+/** Die Farben, die markierte Tage tatsächlich tragen — in der festen Reihenfolge der Palette. */
+export function benutzteFarben(tage: Tage): Farbe[] {
+  const da = new Set<Farbe>();
+  for (const e of Object.values(tage)) if (e.markiert) da.add(e.farbe);
+  return FARBEN.filter((f) => da.has(f));
 }
 
 /** Der erste markierte Tag ab `abDatum` (einschließlich) — oder null. */

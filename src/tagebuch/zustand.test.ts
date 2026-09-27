@@ -50,7 +50,7 @@ describe('Tagebuch-Zustand', () => {
   });
 
   it('lädt genau einmal und stellt den Bestand bereit', async () => {
-    const s = fakeSpeicher({ version: 1, tage: { [T]: { text: 'Alt', markiert: true, ereignis: 'E', geaendert: 'x' } } });
+    const s = fakeSpeicher({ version: 1, tage: { [T]: { text: 'Alt', markiert: true, ereignis: 'E', farbe: 'gold', geaendert: 'x' } } });
     konfiguriereTagebuch(s, UHR);
     expect(zustand().status).toBe('aus');
     await ladeTagebuch();
@@ -75,6 +75,7 @@ describe('Tagebuch-Zustand', () => {
       text: 'Ha',
       markiert: false,
       ereignis: '',
+      farbe: 'gold',
       geaendert: '2026-09-26T12:32:00.000Z',
     });
     expect(zustand().sicherung).toBe('gespeichert');
@@ -82,7 +83,7 @@ describe('Tagebuch-Zustand', () => {
   });
 
   it('entfernt leer gewordene Tage und schreibt sofort auf Wunsch', async () => {
-    const s = fakeSpeicher({ version: 1, tage: { [T]: { text: 'Alt', markiert: false, ereignis: '', geaendert: 'x' } } });
+    const s = fakeSpeicher({ version: 1, tage: { [T]: { text: 'Alt', markiert: false, ereignis: '', farbe: 'gold', geaendert: 'x' } } });
     konfiguriereTagebuch(s, UHR);
     await ladeTagebuch();
     aendereEintrag(T, { text: '   ' });
@@ -96,6 +97,12 @@ describe('Tagebuch-Zustand', () => {
     // Nichts Ausstehendes → kein weiterer Schreibvorgang.
     await speichereJetzt();
     expect(s.geschrieben).toHaveLength(2);
+    // Die Farbe der Markierung wird mitgeschrieben und übersteht das Ab- und Anschalten.
+    aendereEintrag(T, { farbe: 'schiefer' });
+    aendereEintrag(T, { markiert: false, text: 'bleibt' });
+    aendereEintrag(T, { markiert: true });
+    await speichereJetzt();
+    expect(s.geschrieben[2].tage[T]).toMatchObject({ markiert: true, farbe: 'schiefer' });
   });
 
   it('schreibt nie vor dem Laden und nie nach einem Ladefehler', async () => {

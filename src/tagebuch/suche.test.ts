@@ -2,7 +2,14 @@ import { describe, expect, it } from 'vitest';
 import type { Eintrag } from './modell';
 import { sucheTagebuch } from './suche';
 
-const e = (p: Partial<Eintrag> = {}): Eintrag => ({ text: '', markiert: false, ereignis: '', geaendert: '', ...p });
+const e = (p: Partial<Eintrag> = {}): Eintrag => ({
+  text: '',
+  markiert: false,
+  ereignis: '',
+  farbe: 'gold',
+  geaendert: '',
+  ...p,
+});
 
 const tage = {
   '2026-09-10': e({ text: 'Erstes Kundengespräch: Porter und die fünf Kräfte erklärt bekommen.' }),

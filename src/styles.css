@@ -37,6 +37,14 @@
   --warn: #e0c0a0;
   --fokus: rgba(208, 176, 144, 0.32);
 
+  /* Markierungsfarben im Tagebuch — gedeckt, ähnlich hell, keine Signalfarben. Gegen
+     #101010 und #1a1714 alle über 5,8:1; kleinster Abstand untereinander 0,08 (OKLab). */
+  --farbe-gold: #d0b090;
+  --farbe-kupfer: #c68a60;
+  --farbe-salbei: #9aaa88;
+  --farbe-schiefer: #8a94ac;
+  --farbe-altrosa: #c08c9e;
+
   --sans: 'Geist Variable', 'Segoe UI', system-ui, sans-serif;
   --mono: 'Geist Mono Variable', ui-monospace, 'Cascadia Mono', Consolas, monospace;
 
@@ -632,6 +640,12 @@ kbd {
   overflow-x: hidden;
   background: var(--grund);
   outline: none;
+}
+/* Die Bühne bekommt den Fokus nur, damit Tastatur und Vorlesehilfe am Seitenanfang
+   stehen — sie zeigt dafür keinen Ring (auch nicht den Schatten der allgemeinen Regel). */
+.buehne:focus-visible {
+  box-shadow: none;
+  border-radius: 0;
 }
 
 .pfad {
@@ -1494,16 +1508,39 @@ a.lesestrecke__link:hover {
 .tag__punkt--eintrag {
   background: var(--text-2);
 }
+/* Die Farbe einer Markierung: ein Attribut, eine Variable — Zelle, Punkt, Marke,
+   Schalter und Filter lesen nur `--ereignis`. Ohne Attribut gilt das Gold des Akzents. */
+[data-farbe='gold'] {
+  --ereignis: var(--farbe-gold);
+}
+[data-farbe='kupfer'] {
+  --ereignis: var(--farbe-kupfer);
+}
+[data-farbe='salbei'] {
+  --ereignis: var(--farbe-salbei);
+}
+[data-farbe='schiefer'] {
+  --ereignis: var(--farbe-schiefer);
+}
+[data-farbe='altrosa'] {
+  --ereignis: var(--farbe-altrosa);
+}
+
 .tag--ereignis {
-  color: var(--akzent);
+  color: var(--ereignis, var(--akzent));
 }
 .tag--ereignis .tag__nr {
   font-weight: 600;
 }
 .tag--ereignis .tag__punkt,
 .tag__punkt--ereignis {
-  background: var(--akzent);
-  box-shadow: 0 0 0 2px var(--akzent-wasch);
+  background: var(--ereignis, var(--akzent));
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--ereignis, var(--akzent)) 16%, transparent);
+}
+/* Im Raster einen Hauch größer (5 px), damit sich fünf Farben unterscheiden lassen —
+   skaliert statt vergrößert, die Zeile verschiebt sich nicht. */
+.tag--ereignis .tag__punkt {
+  transform: scale(1.25);
 }
 .tag--heute {
   box-shadow: inset 0 0 0 1px var(--linie-stark);
@@ -1518,7 +1555,7 @@ a.lesestrecke__link:hover {
   box-shadow: inset 0 0 0 1px var(--akzent);
 }
 .tag--aktiv.tag--ereignis {
-  color: var(--akzent-hell);
+  color: color-mix(in srgb, var(--ereignis, var(--akzent)) 78%, #fff8ec);
 }
 .tag:focus-visible {
   outline-offset: -1px;
@@ -1706,6 +1743,10 @@ a.lesestrecke__link:hover {
     background var(--takt) var(--kurve),
     color var(--takt) var(--kurve);
 }
+/* Liste mit vollem Datum („26.09.2026“) braucht eine breitere erste Spalte. */
+.eintraege--volldatum .eintragzeile {
+  grid-template-columns: 74px minmax(0, 1fr);
+}
 .eintragzeile::before {
   content: '';
   position: absolute;
@@ -1748,9 +1789,61 @@ a.lesestrecke__link:hover {
   height: 6px;
   margin-right: 7px;
   border-radius: 50%;
-  background: var(--akzent);
+  background: var(--ereignis, var(--akzent));
   vertical-align: middle;
   transform: translateY(-1px);
+}
+
+/* Filter über „Markierte Tage“: je benutzter Farbe ein Punkt, ohne Namen. */
+.farbfilter {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin: 2px 0 4px;
+  padding: 0 2px;
+}
+.farbfilter__punkt {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 22px;
+  border-radius: var(--radius-klein);
+  transition: background var(--takt) var(--kurve);
+}
+.farbfilter__punkt::before {
+  content: '';
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--ereignis);
+  transition: box-shadow var(--takt) var(--kurve);
+}
+.farbfilter__punkt:hover {
+  background: var(--flaeche-3);
+}
+.farbfilter__punkt[aria-pressed='true'] {
+  background: color-mix(in srgb, var(--ereignis) 16%, transparent);
+}
+.farbfilter__punkt[aria-pressed='true']::before {
+  box-shadow:
+    0 0 0 2px var(--flaeche),
+    0 0 0 3px var(--ereignis);
+}
+.farbfilter__alle {
+  margin-left: auto;
+  padding: 2px 6px;
+  border-radius: var(--radius-klein);
+  font-size: 10.5px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  transition:
+    background var(--takt) var(--kurve),
+    color var(--takt) var(--kurve);
+}
+.farbfilter__alle:hover {
+  color: var(--text-stark);
+  background: var(--flaeche-3);
 }
 
 /* Suchtreffer im Tagebuch: Datum, darunter der Ausschnitt mit Hervorhebung. */
@@ -1930,15 +2023,15 @@ a.lesestrecke__link:hover {
 }
 
 .marke--ereignis {
-  border-color: rgba(208, 176, 144, 0.45);
-  color: var(--akzent);
+  border-color: color-mix(in srgb, var(--ereignis, var(--akzent)) 45%, transparent);
+  color: var(--ereignis, var(--akzent));
 }
 .marke--ereignis::before {
   content: '';
   width: 5px;
   height: 5px;
   border-radius: 50%;
-  background: var(--akzent);
+  background: var(--ereignis, var(--akzent));
 }
 
 .tagebuch__fehler {
@@ -2065,17 +2158,62 @@ a.lesestrecke__link:hover {
     background var(--takt) var(--kurve);
 }
 .schalter[aria-checked='true'] {
-  border-color: var(--akzent);
-  color: var(--akzent);
-  background: var(--akzent-wasch);
+  border-color: var(--ereignis, var(--akzent));
+  color: var(--ereignis, var(--akzent));
+  background: color-mix(in srgb, var(--ereignis, var(--akzent)) 14%, transparent);
 }
 .schalter[aria-checked='true'] .schalter__knopf {
-  background: var(--auswahl);
-  box-shadow: inset 0 0 0 1px var(--akzent);
+  background: color-mix(in srgb, var(--ereignis, var(--akzent)) 32%, var(--grund));
+  box-shadow: inset 0 0 0 1px var(--ereignis, var(--akzent));
 }
 .schalter[aria-checked='true'] .schalter__knopf::after {
   transform: translateX(12px);
-  background: var(--akzent);
+  background: var(--ereignis, var(--akzent));
+}
+
+/* Farbwahl unter dem Schalter: fünf Punkte, der gewählte trägt einen Ring. */
+.farbwahl {
+  flex-basis: 100%;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: -4px;
+}
+.farbwahl__punkt {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  transition: background var(--takt) var(--kurve);
+}
+.farbwahl__punkt::before {
+  content: '';
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--ereignis);
+  transition:
+    box-shadow var(--takt) var(--kurve),
+    transform var(--takt) var(--kurve);
+}
+.farbwahl__punkt:hover:not(:disabled) {
+  background: var(--flaeche-3);
+}
+.farbwahl__punkt:hover:not(:disabled)::before {
+  transform: scale(1.1);
+}
+.farbwahl__punkt[aria-checked='true']::before {
+  box-shadow:
+    0 0 0 3px var(--grund),
+    0 0 0 4px var(--ereignis);
+}
+.farbwahl__punkt:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.farbwahl__punkt:focus-visible {
+  border-radius: 50%;
 }
 
 .ereignisfeld {

@@ -1,9 +1,11 @@
 import { Fragment, useEffect, useMemo, useRef, useState, type KeyboardEvent, type RefObject } from 'react';
 import { hrefTagebuch } from '../router';
 import {
+  FARBE_NAME,
   MONATE_KURZ,
   WOCHENTAGE,
   baue,
+  benutzteFarben,
   ersteZeile,
   formatiereMonat,
   formatiereTagDatum,
@@ -22,6 +24,7 @@ import {
   verschiebeMonat,
   verschiebeTag,
   zerlege,
+  type Farbe,
 } from '../tagebuch/modell';
 import { exportDateiname, exportiereMarkdown, speichereExport } from '../tagebuch/export';
 import { sucheTagebuch } from '../tagebuch/suche';
@@ -34,7 +37,7 @@ import { Markiert } from './Markiert';
 // sechs Zeilen, mit Kalenderwoche) oder die Jahresübersicht (zwölf Monate mit
 // Zählern), der Hinweis auf das nächste Ereignis, darunter entweder die Treffer
 // der Suche oder die Einträge des Monats, die offenen Fragen und die markierten
-// Tage; in der Fußzeile der Export. Jeder Tag ist ein echter Link
+// Tage (in ihrer Farbe, nach Farbe filterbar); in der Fußzeile der Export. Jeder Tag ist ein echter Link
 // (#/tagebuch/<datum>) — Zurück/Vor und Deep-Links funktionieren ohne eigene
 // Logik; Pfeiltasten wandern im Raster und über den Monatsrand hinaus.
 // ─────────────────────────────────────────────────────────────────────────────
@@ -99,6 +102,15 @@ export function TagebuchLeiste({ datum, suchRef }: Props) {
     [z.tage, sicht.jahr, sicht.monat],
   );
   const markiert = useMemo(() => sortierteTage(z.tage).filter((d) => z.tage[d].markiert), [z.tage]);
+  // Filter nach Farbe: nur sinnvoll, wenn mindestens zwei Farben benutzt sind. Verschwindet
+  // die gewählte Farbe (letzter Tag umgefärbt), gilt wieder „alle“.
+  const farben = useMemo(() => benutzteFarben(z.tage), [z.tage]);
+  const [farbWahl, setFarbWahl] = useState<Farbe | null>(null);
+  const farbFilter = farbWahl !== null && farben.length > 1 && farben.includes(farbWahl) ? farbWahl : null;
+  const markiertSichtbar = useMemo(
+    () => (farbFilter ? markiert.filter((d) => z.tage[d].farbe === farbFilter) : markiert),
+    [markiert, farbFilter, z.tage],
+  );
   const fragen = useMemo(() => offeneFragen(z.tage), [z.tage]);
   const naechstes = useMemo(() => naechstesEreignis(z.tage, heuteIso), [z.tage, heuteIso]);
   const gesamt = Object.keys(z.tage).length;
@@ -317,6 +329,7 @@ export function TagebuchLeiste({ datum, suchRef }: Props) {
               const label = [
                 formatiereTagLang(zelle.datum),
                 ereignis ? `Ereignis${e.ereignis.trim() ? ': ' + e.ereignis.trim() : ''}` : null,
+                ereignis ? `Farbe ${FARBE_NAME[e.farbe]}` : null,
                 hatText ? 'Eintrag vorhanden' : null,
                 istTreffer ? 'Suchtreffer' : null,
               ]
@@ -332,6 +345,7 @@ export function TagebuchLeiste({ datum, suchRef }: Props) {
                   <a
                     href={hrefTagebuch(zelle.datum)}
                     data-tag={zelle.datum}
+                    data-farbe={ereignis ? e.farbe : undefined}
                     className={
                       'tag' +
                       (zelle.imMonat ? '' : ' tag--fremd') +
@@ -371,7 +385,7 @@ export function TagebuchLeiste({ datum, suchRef }: Props) {
               Nächstes Ereignis · {inTagenText(tageZwischen(heuteIso, naechstes))}
             </span>
             <span className="kalender__naechstes-text">
-              <span className="eintragzeile__ereignis" aria-hidden="true" />
+              <span className="eintragzeile__ereignis" data-farbe={z.tage[naechstes].farbe} aria-hidden="true" />
               {z.tage[naechstes].ereignis.trim() || formatiereTagLang(naechstes)}
             </span>
           </a>
@@ -415,7 +429,7 @@ export function TagebuchLeiste({ datum, suchRef }: Props) {
                       >
                         <span className="tagtreffer__datum mono">
                           {formatiereTagDatum(t.datum)}
-                          {e.markiert ? <span className="eintragzeile__ereignis" title="Ereignis" /> : null}
+                          {e.markiert ? <span className="eintragzeile__ereignis" data-farbe={e.farbe} title="Ereignis" /> : null}
                         </span>
                         <span className="tagtreffer__text">
                           {t.imEreignis ? (
@@ -462,7 +476,7 @@ export function TagebuchLeiste({ datum, suchRef }: Props) {
                         >
                           <span className="eintragzeile__datum mono">{formatiereTagKurz(d)}</span>
                           <span className="eintragzeile__text">
-                            {e.markiert ? <span className="eintragzeile__ereignis" title="Ereignis" /> : null}
+                            {e.markiert ? <span className="eintragzeile__ereignis" data-farbe={e.farbe} title="Ereignis" /> : null}
                             {vorschauText}
                           </span>
                         </a>
@@ -496,10 +510,32 @@ export function TagebuchLeiste({ datum, suchRef }: Props) {
               <section className="abteilung" aria-labelledby="tb-ereignisse">
                 <h3 className="abteilung__titel" id="tb-ereignisse">
                   <span>Markierte Tage</span>
-                  <span className="abteilung__zahl mono">{markiert.length}</span>
+                  <span className="abteilung__zahl mono">
+                    {farbFilter ? `${markiertSichtbar.length} von ${markiert.length}` : markiert.length}
+                  </span>
                 </h3>
-                <ol className="eintraege">
-                  {markiert.map((d) => {
+                {farben.length > 1 ? (
+                  <div className="farbfilter" role="group" aria-label="Markierte Tage nach Farbe filtern">
+                    {farben.map((f) => (
+                      <button
+                        key={f}
+                        type="button"
+                        className="farbfilter__punkt"
+                        data-farbe={f}
+                        aria-pressed={farbFilter === f}
+                        aria-label={FARBE_NAME[f]}
+                        onClick={() => setFarbWahl(farbFilter === f ? null : f)}
+                      />
+                    ))}
+                    {farbFilter ? (
+                      <button type="button" className="farbfilter__alle mono" onClick={() => setFarbWahl(null)}>
+                        Alle
+                      </button>
+                    ) : null}
+                  </div>
+                ) : null}
+                <ol className="eintraege eintraege--volldatum">
+                  {markiertSichtbar.map((d) => {
                     const e = z.tage[d];
                     const aktiv = d === datum;
                     return (
@@ -512,7 +548,7 @@ export function TagebuchLeiste({ datum, suchRef }: Props) {
                         >
                           <span className="eintragzeile__datum mono">{formatiereTagDatum(d)}</span>
                           <span className="eintragzeile__text">
-                            <span className="eintragzeile__ereignis" title="Ereignis" />
+                            <span className="eintragzeile__ereignis" data-farbe={e.farbe} title="Ereignis" />
                             {e.ereignis.trim() || ersteZeile(e.text) || 'Ereignis'}
                           </span>
                         </a>

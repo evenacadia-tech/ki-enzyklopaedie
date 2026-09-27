@@ -1,10 +1,19 @@
 import { istTauri } from '../oeffnen';
-import { formatiereTagDatum, formatiereTagLang, formatiereUhrzeit, heute, sortierteTage, type Tage } from './modell';
+import {
+  FARBE_NAME,
+  formatiereTagDatum,
+  formatiereTagLang,
+  formatiereUhrzeit,
+  heute,
+  sortierteTage,
+  type Tage,
+} from './modell';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Export des ganzen Tagebuchs als eine Markdown-Datei: zum Drucken, Archivieren
 // oder Weitergeben. Der Text bleibt, wie er geschrieben wurde (keine Umformung);
-// jeder Tag ist eine Überschrift, ein markierter Tag trägt seine Bezeichnung.
+// jeder Tag ist eine Überschrift, ein markierter Tag trägt seine Bezeichnung und
+// den Namen seiner Farbe (die Farbe selbst ginge im Text verloren).
 // Nativ fragt ein Speichern-Dialog nach dem Ziel und ein Tauri-Command schreibt;
 // im Browser wird die Datei heruntergeladen.
 // ─────────────────────────────────────────────────────────────────────────────
@@ -27,7 +36,7 @@ export function exportiereMarkdown(tage: Tage, jetzt: Date = new Date()): string
   for (const datum of daten) {
     const e = tage[datum];
     zeilen.push(`## ${formatiereTagLang(datum)}`, '');
-    if (e.markiert) zeilen.push(`**Ereignis:** ${e.ereignis.trim() || 'ja'}`, '');
+    if (e.markiert) zeilen.push(`**Ereignis (${FARBE_NAME[e.farbe]}):** ${e.ereignis.trim() || 'ja'}`, '');
     const text = e.text.replace(/\r\n/g, '\n').trim();
     if (text !== '') zeilen.push(text, '');
   }

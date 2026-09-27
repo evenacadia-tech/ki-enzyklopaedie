@@ -1,6 +1,8 @@
 import { useEffect, type KeyboardEvent } from 'react';
 import { hrefTagebuch } from '../router';
 import {
+  FARBEN,
+  FARBE_NAME,
   LEER,
   WOCHENTAGE,
   formatiereMonat,
@@ -28,7 +30,7 @@ import {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Ein Tag im Tagebuch: Datum als Titel, Tag-Navigation, der Ereignis-Schalter mit
-// Kurzbezeichnung, das Textfeld (wächst mit, speichert von selbst) und rechts die
+// Kurzbezeichnung und Farbwahl (fünf Farben, ohne Legende), das Textfeld (wächst mit, speichert von selbst) und rechts die
 // Randspalte mit Fakten, dem Rückblick auf den vorherigen Eintrag und dem Sprung
 // zum nächsten. Gerendert wird nur; Zustand und Sicherung liegen in
 // `tagebuch/zustand.ts`.
@@ -82,6 +84,18 @@ export function TagebuchAnsicht({ datum }: { datum: string }) {
       ? `${formatiereTagDatum(heute(geaendert))}, ${formatiereUhrzeit(e.geaendert)}`
       : '—';
 
+  // Farbwahl als Radiogruppe: Pfeiltasten wählen und tragen den Fokus mit.
+  const aufTasteInFarbwahl = (ev: KeyboardEvent<HTMLDivElement>) => {
+    const vor = ev.key === 'ArrowRight' || ev.key === 'ArrowDown';
+    const zurueck = ev.key === 'ArrowLeft' || ev.key === 'ArrowUp';
+    if (!vor && !zurueck) return;
+    const i = FARBEN.indexOf(e.farbe);
+    const ziel = FARBEN[(i + (vor ? 1 : -1) + FARBEN.length) % FARBEN.length];
+    aendereEintrag(datum, { farbe: ziel });
+    ev.currentTarget.querySelector<HTMLButtonElement>(`[data-farbe="${ziel}"]`)?.focus();
+    ev.preventDefault();
+  };
+
   const aufTaste = (ev: KeyboardEvent<HTMLElement>) => {
     if ((ev.ctrlKey || ev.metaKey) && ev.key.toLowerCase() === 's') {
       ev.preventDefault();
@@ -99,7 +113,7 @@ export function TagebuchAnsicht({ datum }: { datum: string }) {
           </span>
           <span>{formatiereMonat(teile.jahr, teile.monat)}</span>
           {e.markiert ? (
-            <span className="marke marke--ereignis" title="Als besonderes Ereignis markiert">
+            <span className="marke marke--ereignis" data-farbe={e.farbe} title="Als besonderes Ereignis markiert">
               Ereignis
             </span>
           ) : null}
@@ -131,6 +145,7 @@ export function TagebuchAnsicht({ datum }: { datum: string }) {
               role="switch"
               aria-checked={e.markiert}
               className="schalter"
+              data-farbe={e.markiert ? e.farbe : undefined}
               disabled={!bereit}
               onClick={() => aendereEintrag(datum, { markiert: !e.markiert })}
             >
@@ -151,6 +166,24 @@ export function TagebuchAnsicht({ datum }: { datum: string }) {
                 onKeyDown={aufTaste}
                 autoComplete="off"
               />
+            ) : null}
+            {e.markiert ? (
+              <div className="farbwahl" role="radiogroup" aria-label="Farbe der Markierung" onKeyDown={aufTasteInFarbwahl}>
+                {FARBEN.map((f) => (
+                  <button
+                    key={f}
+                    type="button"
+                    role="radio"
+                    aria-checked={e.farbe === f}
+                    aria-label={FARBE_NAME[f]}
+                    tabIndex={e.farbe === f ? 0 : -1}
+                    className="farbwahl__punkt"
+                    data-farbe={f}
+                    disabled={!bereit}
+                    onClick={() => aendereEintrag(datum, { farbe: f })}
+                  />
+                ))}
+              </div>
             ) : null}
           </div>
 

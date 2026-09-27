@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
+  FARBEN,
+  benutzteFarben,
   ersteZeile,
   formatiereMonat,
   formatiereTagKurz,
@@ -15,6 +17,7 @@ import {
   nachbarEintrag,
   naechstesEreignis,
   normalisiereDaten,
+  normalisiereFarbe,
   offeneFragen,
   tageImMonat,
   tageZwischen,
@@ -26,7 +29,14 @@ import {
   type Eintrag,
 } from './modell';
 
-const e = (p: Partial<Eintrag> = {}): Eintrag => ({ text: '', markiert: false, ereignis: '', geaendert: '', ...p });
+const e = (p: Partial<Eintrag> = {}): Eintrag => ({
+  text: '',
+  markiert: false,
+  ereignis: '',
+  farbe: 'gold',
+  geaendert: '',
+  ...p,
+});
 
 describe('ISO-Datum', () => {
   it('erkennt nur echte Kalendertage', () => {
@@ -110,9 +120,39 @@ describe('Einträge', () => {
       },
     });
     expect(Object.keys(d.tage)).toEqual(['2026-09-26']);
-    expect(d.tage['2026-09-26']).toEqual({ text: 'Hallo', markiert: false, ereignis: '', geaendert: 'x' });
+    expect(d.tage['2026-09-26']).toEqual({ text: 'Hallo', markiert: false, ereignis: '', farbe: 'gold', geaendert: 'x' });
     expect(normalisiereDaten(null)).toEqual({ version: 1, tage: {} });
     expect(normalisiereDaten('müll')).toEqual({ version: 1, tage: {} });
+  });
+
+  it('liest die Farbe einer Markierung: bekannte bleibt, fehlende oder unbekannte wird Gold', () => {
+    const d = normalisiereDaten({
+      version: 1,
+      tage: {
+        '2026-09-01': { markiert: true, ereignis: 'alt, ohne Farbe' },
+        '2026-09-02': { markiert: true, farbe: 'salbei' },
+        '2026-09-03': { markiert: true, farbe: 'rot' },
+        '2026-09-04': { markiert: true, farbe: 7 },
+      },
+    });
+    expect(Object.values(d.tage).map((t) => t.farbe)).toEqual(['gold', 'salbei', 'gold', 'gold']);
+    for (const f of FARBEN) expect(normalisiereFarbe(f)).toBe(f);
+    expect(normalisiereFarbe(undefined)).toBe('gold');
+    expect(normalisiereFarbe('Gold')).toBe('gold');
+    // Eine Farbe allein macht keinen Eintrag.
+    expect(istLeer(e({ farbe: 'kupfer' }))).toBe(true);
+    expect(normalisiereDaten({ version: 1, tage: { '2026-09-05': { farbe: 'kupfer' } } }).tage).toEqual({});
+  });
+
+  it('nennt die benutzten Farben markierter Tage in Palettenreihenfolge', () => {
+    const tage = {
+      '2026-09-01': e({ markiert: true, farbe: 'altrosa' }),
+      '2026-09-02': e({ markiert: true, farbe: 'gold' }),
+      '2026-09-03': e({ markiert: true, farbe: 'altrosa' }),
+      '2026-09-04': e({ text: 'nicht markiert', farbe: 'schiefer' }),
+    };
+    expect(benutzteFarben(tage)).toEqual(['gold', 'altrosa']);
+    expect(benutzteFarben({})).toEqual([]);
   });
 
   it('weigert sich bei Daten einer neueren Version', () => {
