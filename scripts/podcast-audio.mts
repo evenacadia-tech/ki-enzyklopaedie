@@ -144,13 +144,29 @@ for (const a of auftraege) {
     abbruch(`${a.name}: ffmpeg brach ab.\n${(lauf.stderr ?? lauf.error?.message ?? '').trim()}`);
   }
 
-  const info = leseOpus(...kopfUndEnde(zwischen));
+  let info: ReturnType<typeof leseOpus>;
+  try {
+    info = leseOpus(...kopfUndEnde(zwischen));
+  } catch (e) {
+    rmSync(zwischen, { force: true });
+    abbruch(`${a.name}: ffmpeg lieferte keine lesbare Opus-Datei (${e instanceof Error ? e.message : String(e)}).`);
+  }
   if (info.kanaele !== 1 || Math.abs(info.sekunden - quelle.sekunden) > 0.5) {
     rmSync(zwischen, { force: true });
     abbruch(`${a.name}: Ergebnis passt nicht zur Quelle (${info.kanaele} Kanäle, ${info.sekunden} s statt ${quelle.sekunden} s).`);
   }
   const ersetzt = existsSync(ziel);
-  renameSync(zwischen, ziel);
+  try {
+    renameSync(zwischen, ziel);
+  } catch (e) {
+    // Windows ersetzt keine Datei, die ein anderes Programm offen hält (EPERM/EBUSY) — etwa
+    // der Vite-Server (dev/preview), der sie gerade ausgeliefert hat.
+    rmSync(zwischen, { force: true });
+    abbruch(
+      `${a.name}: ${podcastDatei(a.artikelId)} ließ sich nicht ersetzen (${e instanceof Error ? e.message : String(e)}).\n` +
+        'Hält ein anderes Programm die Datei offen? Vite-Server (npm run dev/preview) beenden, dann noch einmal.',
+    );
+  }
 
   const bytes = statSync(ziel).size;
   const alt = JSON.parse(readFileSync(VERZEICHNIS, 'utf8')) as PodcastVerzeichnis;

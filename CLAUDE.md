@@ -314,6 +314,10 @@ User-Auftrag 28.09.2026: ein Installer-Paket, um die App einem Freund zu geben.
 - `nativ:beweis` spielt einige Sekunden eines Podcasts HÖRBAR über die Lautsprecher ab. Den
   localStorage-Eintrag `ki-enzyklopaedie.podcast.v1` des echten WebView2-Profils schreibt der
   Lauf danach auf den alten Wert zurück.
+- Ein laufender Vite-Server (dev/preview), der eine `.opus` ausgeliefert hat, hält sie offen:
+  `podcast:audio` kann sie dann nicht ersetzen (EPERM) und sagt das. Server beenden — ein im
+  Hintergrund gestartetes `npm run preview` lässt beim Abbruch den Kindprozess `node … vite
+  preview` weiterlaufen, den eigens beenden.
 - `ffmpeg-static` lädt ffmpeg in einem Install-Skript. npm 11.17 warnt bei Install-Skripten,
   die nicht in `allowScripts` (package.json) freigegeben sind (ausgeführt hat es sie trotzdem);
   `ffmpeg-static` und `esbuild` stehen dort mit Version. Nach einem Update des Pakets
