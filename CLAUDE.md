@@ -217,6 +217,9 @@ Zwei Quellen plus die Vertiefungen, ein Load-Guard (`src/inhalt/index.ts` →
 
 User-Auftrag 28.09.2026: ein Installer-Paket, um die App einem Freund zu geben.
 
+- Ältere Pakete in `weitergabe/` nach jeder neuen Fassung löschen (User 28.09.2026: „lösche
+  die alten“ — mit den Podcasts ist jede Fassung Dutzende bis Hunderte MB groß). Das Skript
+  selbst ersetzt nur die Dateien der eigenen Version.
 - `npm run tauri:build && npm run weitergabe` → `weitergabe/` (nicht eingecheckt):
   `KI-Enzyklopaedie-<version>.zip` mit `KI-Enzyklopaedie-Setup-<version>.exe` und
   `LIESMICH.txt` (Vorlage `scripts/weitergabe-liesmich.txt`, Platzhalter `{{version}}`,

@@ -30,8 +30,9 @@ einbauen, „neben die Überschrift kommt ein stilistisch passender Playbutton�
   Artikeln; gegen die Quelltexte geprüft (HLEG-Rechenschaftspflicht, Grenzen der
   Vermutungswirkung) — passen. 267,4 MB → 34,0 MB, Lautstärke 0,1–0,2 dB darunter. Gleiche
   Prüfungen wie 0.4.1 (`nist-rmf` in der installierten App abgespielt), Paket 0.4.2 (92 MB)
-  auf dem Desktop. `weitergabe/` behält alle älteren Pakete (nicht eingecheckt) — bei 111
-  Folgen je Fassung gut 1 GB (Zip + Installer); ältere dürfen weg, der User entscheidet.
+  auf dem Desktop. Ältere Pakete in `weitergabe/` (0.2.0–0.4.1, 212 MB) auf Wunsch des Users
+  gelöscht („lösche die alten“) — ab jetzt nach jeder neuen Fassung die älteren dort entfernen
+  (bei 111 Folgen wäre jede Fassung gut 1 GB, Zip + Installer).
 - **Kompression:** Opus mono 32 kbit/s, 297,6 MB → 37,8 MB (je Folge 4–7 MB), Lautstärke
   0,1–0,2 dB unter dem Original. Die Originale liegen unberührt in `Downloads`; die App braucht
   sie nicht mehr.
