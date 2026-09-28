@@ -19,7 +19,8 @@ import { closeSync, existsSync, mkdirSync, openSync, readFileSync, readSync, ren
 import { basename, resolve } from 'node:path';
 import ffmpeg from 'ffmpeg-static';
 import { enzyklopaedie } from '../src/inhalt/index.ts';
-import { PODCAST_ORDNER, podcastDatei, type PodcastVerzeichnis } from '../src/podcast/katalog.ts';
+// `uhr` wie in der App (abgerundet): 1379,6 s ist „22:59“, nicht „22:60“.
+import { PODCAST_ORDNER, podcastDatei, uhr, type PodcastVerzeichnis } from '../src/podcast/katalog.ts';
 import { leseLieferung, trageEin } from '../src/podcast/lieferung.ts';
 import { ENDE_BYTES, leseOpus } from '../src/podcast/ogg.ts';
 import { podcastQuellen } from '../src/podcast/quelltext.ts';
@@ -33,7 +34,6 @@ function abbruch(text: string): never {
 }
 
 const mb = (bytes: number) => (bytes / 1024 / 1024).toFixed(1).replace('.', ',') + ' MB';
-const uhr = (s: number) => `${Math.floor(s / 60)}:${String(Math.round(s % 60)).padStart(2, '0')}`;
 
 if (!ffmpeg || !existsSync(ffmpeg)) abbruch('ffmpeg fehlt — `npm install` ausführen (Paket ffmpeg-static lädt es herunter).');
 const FFMPEG: string = ffmpeg;

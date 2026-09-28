@@ -66,6 +66,48 @@
       "sekunden": 814.65,
       "bytes": 3326905,
       "quelle": "11. Was_Entwickler_niemals_programmieren_dürfen.m4a"
+    },
+    "datensouveraenitaet": {
+      "titel": "Der Cloud Act hebelt deutsche Server aus",
+      "sekunden": 1379.57,
+      "bytes": 5634518,
+      "quelle": "12. Der_Cloud_Act_hebelt_deutsche_Server_aus.m4a"
+    },
+    "hleg": {
+      "titel": "Wer haftet für die Künstliche Intelligenz",
+      "sekunden": 1307.77,
+      "bytes": 5358667,
+      "quelle": "13. Wer_haftet_für_die_Künstliche_Intelligenz.m4a"
+    },
+    "harmonisierung": {
+      "titel": "Warum ISO-Zertifikate für KI-Compliance nicht reichen",
+      "sekunden": 891.69,
+      "bytes": 3632509,
+      "quelle": "14. Warum_ISO-Zertifikate_für_KI-Compliance_nicht_reichen.m4a"
+    },
+    "iso-42001-kein-freibrief": {
+      "titel": "ISO-Zertifikate schützen nicht vor KI-Haftung",
+      "sekunden": 1074.13,
+      "bytes": 4392670,
+      "quelle": "15. ISO-Zertifikate_schützen_nicht_vor_KI-Haftung.m4a"
+    },
+    "iso-42001": {
+      "titel": "ISO 42001 prüft Prozesse statt Code",
+      "sekunden": 1585.53,
+      "bytes": 6494553,
+      "quelle": "16. ISO_42001_prüft_Prozesse_statt_Code.m4a"
+    },
+    "konformitaet": {
+      "titel": "Rechtssicherer Fahrplan für Hochrisiko-KIs",
+      "sekunden": 1500.78,
+      "bytes": 6139685,
+      "quelle": "17. Rechtssicherer_Fahrplan_für_Hochrisiko-KIs.m4a"
+    },
+    "nist-rmf": {
+      "titel": "Sicherer KI Einsatz mit dem NIST Framework",
+      "sekunden": 973.06,
+      "bytes": 3967346,
+      "quelle": "18. Sicherer_KI_Einsatz_mit_dem_NIST_Framework.m4a"
     }
   }
 }
