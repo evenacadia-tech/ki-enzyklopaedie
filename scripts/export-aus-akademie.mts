@@ -1,7 +1,7 @@
 // Exportiert die aufgelöste Enzyklopädie der Akademie-App (probetag-akademie, alle
 // Content-Packs aktiv) als eigenständiges JSON nach src/inhalt/artikel.json.
 //
-//   npm run inhalt:export -- [akademie-pfad] [ziel.json]
+//   npm run inhalt:export -- [akademie-pfad] [ziel.json] [--verlust-ok]
 //
 // Standard: Akademie-Repo unter ../Projekte/Vorbereitung Probetag Avarno (Layout
 // dieses Rechners), Ziel src/inhalt/artikel.json. Das Skript importiert die Akademie-
@@ -11,14 +11,14 @@
 // + absaetze, `verweise` → sieheAuch-IDs, plus die Herkunfts-Sammlung je Artikel.
 import { pathToFileURL } from 'node:url';
 import { dirname, resolve } from 'node:path';
-import { existsSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { execSync } from 'node:child_process';
 
 const hier = dirname(new URL(import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, '$1'));
 const wurzel = resolve(hier, '..');
-const arg = (i: number): string | undefined => (process.argv[i] && process.argv[i] !== '' ? process.argv[i] : undefined);
-const akademie = resolve(arg(2) ?? resolve(wurzel, '..', 'Projekte', 'Vorbereitung Probetag Avarno'));
-const ziel = resolve(arg(3) ?? resolve(wurzel, 'src', 'inhalt', 'artikel.json'));
+const positionen = process.argv.slice(2).filter((a) => a !== '' && !a.startsWith('--'));
+const akademie = resolve(positionen[0] ?? resolve(wurzel, '..', 'Projekte', 'Vorbereitung Probetag Avarno'));
+const ziel = resolve(positionen[1] ?? resolve(wurzel, 'src', 'inhalt', 'artikel.json'));
 
 if (!existsSync(resolve(akademie, 'src/content/enzyklopaedie.ts'))) {
   console.error(`Kein Akademie-Repo unter ${akademie} (src/content/enzyklopaedie.ts fehlt).`);
@@ -75,6 +75,20 @@ const artikel = (e.liste as RohArtikel[]).map((a) => ({
   synonyme: a.synonyme ?? [],
   unsicher: a.unsicher === true,
 }));
+
+// Artikel-IDs sind Deep-Link-Ziele, und an ihnen hängen Lesefortschritt und Podcasts. Ein
+// Export aus einem älteren Akademie-Klon (auf dem Laptop fehlt z. B. das Voicebot-Paket)
+// würde Artikel still entfernen — deshalb bricht er ab, solange niemand `--verlust-ok`
+// dazuschreibt.
+if (existsSync(ziel) && !process.argv.includes('--verlust-ok')) {
+  const neu = new Set(artikel.map((a) => a.id));
+  const verloren = (JSON.parse(readFileSync(ziel, 'utf8')).artikel as { id: string }[]).map((a) => a.id).filter((id) => !neu.has(id));
+  if (verloren.length > 0) {
+    console.error(`Der Export würde ${verloren.length} Artikel entfernen: ${verloren.join(', ')}`);
+    console.error('Stimmt der Stand der Akademie? Absichtlich entfernen: `npm run inhalt:export -- <pfad> --verlust-ok`.');
+    process.exit(1);
+  }
+}
 
 const sha = execSync('git rev-parse --short HEAD', { cwd: akademie }).toString().trim();
 const themen = (schema.themen as string[]).map((id) => ({ id, label: schema.themaLabel[id] as string }));
