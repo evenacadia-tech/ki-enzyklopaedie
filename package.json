@@ -11,6 +11,7 @@
     "test": "vitest run",
     "lint": "eslint .",
     "inhalt:export": "tsx scripts/export-aus-akademie.mts",
+    "podcast:quellen": "tsx scripts/podcast-quellen.mts",
     "tauri": "tauri",
     "tauri:dev": "tauri dev",
     "tauri:build": "tauri build",

@@ -56,8 +56,13 @@ Zwei Quellen, ein Load-Guard (`src/inhalt/index.ts` → `vereinige` in
 
 - `src/inhalt/artikel.json` ist GENERIERT (`npm run inhalt:export -- <akademie-pfad>`).
   Nie von Hand editieren; Inhaltsfehler im Akademie-Repo beheben und neu exportieren.
-  Akademie-Repo auf diesem Rechner: `C:\Users\phili\Projekte\Vorbereitung Probetag Avarno`
-  (GitHub `evenacadia-tech/probetag-akademie`). Dort `npm ci`, bevor der Export läuft.
+  Akademie-Repo (GitHub `evenacadia-tech/probetag-akademie`): exportiert wurde auf einem
+  anderen Rechner aus `C:\Users\phili\Projekte\Vorbereitung Probetag Avarno` (Stand
+  `c785dbb`, mit Voicebot-Paket, nicht auf GitHub). Auf dem Laptop liegt ein ANDERER Stand unter
+  `C:\Users\phili\akademie` (GitHub-master `386d97e` + drei ungepushte Commits: ohne Voicebot,
+  dafür vier Artikel „Lokale KI“ und das Change-Paket). Ein Export von dort entfernt die vier
+  Voicebot-Artikel — das Skript bricht deshalb ab, wenn Artikel-IDs verschwinden würden
+  (`--verlust-ok` erzwingt). Erst beide Stände zusammenführen. Dort `npm ci`, bevor der Export läuft.
 - `src/inhalt/sammlungen/<sammlung>/` sind EIGENE, von Hand gepflegte Sammlungen
   (`strategie/`, fünf Block-Dateien; `psychologie/`, vier Block-Dateien — User-Entscheid
   26.09.2026: Strategiebereich mit Fokus Psychologie ausbauen, alle vier Blöcke gleich
@@ -80,6 +85,21 @@ Zwei Quellen, ein Load-Guard (`src/inhalt/index.ts` → `vereinige` in
   Thema/Sammlung, doppelter Sammlungs-ID, Thema-Label-Konflikt. Das ist gewollt: laut
   brechen statt still leer. Solange eine Block-Datei noch fehlt, auf die eine andere
   verweist, bricht die ganze Suite — erst alle Blöcke, dann testen.
+
+## Podcasts
+
+- User-Auftrag 28.09.2026: je Artikel ein Podcast, den der User in NotebookLM erzeugt. Quelle je
+  Artikel aus `npm run podcast:quellen` (`src/podcast/quelltext.ts`): `notebooklm/<NN> <Grundlagen|
+  Sammlung> – <Abschnitt>/<NNN> <Titel>.md` plus `notebooklm/Übersicht.md` — Ordner und Nummern
+  folgen dem Themen-Register der App, Dateiname = App-Titel (User: jede Audiodatei muss eindeutig
+  ihrem Artikel zuzuordnen sein). Eingecheckt; der Test in `src/podcast/quelltext.test.ts` bricht,
+  wenn die Dateien nicht zum Generator passen — nach JEDER Inhaltsänderung neu erzeugen.
+- Gegliederte Artikel stehen wörtlich darin. Die 41 Grundlagen-Kurzartikel bekommen eine Vertiefung
+  (`src/podcast/vertiefungen/`, Autorenvertrag wie die eigenen Sammlungen, 600–1.000 Wörter); die App
+  zeigt sie nicht an. Ablauf für den User, NotebookLM-Grenzen und Anpassen-Text: `docs/podcasts.md`.
+- Der User übergibt Audio mit der Nummer aus `Übersicht.md`; die Nummer verschiebt sich, wenn
+  Artikel dazukommen — sofort auf die Artikel-ID abbilden, an der das Audio dauerhaft hängt.
+  Einbindung in die App: noch nicht gebaut.
 
 ## Tagebuch
 

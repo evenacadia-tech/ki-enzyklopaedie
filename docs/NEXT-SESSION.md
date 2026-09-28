@@ -1,8 +1,59 @@
 # Übergabe an die nächste Sitzung
 
 Stand: 2026-09-28, Version 0.2.0. Die drei Wünsche vom 27.09.2026 sind gebaut und am
-echten Fenster geprüft; am 28.09.2026 kamen das Paket zum Weitergeben und der Import ins
-Tagebuch dazu (Abschnitte unten). Es gibt keinen offenen Auftrag.
+echten Fenster geprüft; am 28.09.2026 kamen das Paket zum Weitergeben, der Import ins
+Tagebuch und die Quellen für Podcasts dazu (Abschnitte unten). **Offener Auftrag:** die
+Audiodateien, die der User nach und nach liefert, an ihre Artikel hängen (siehe „Podcasts“).
+
+## Podcasts (28.09.2026)
+
+Wunsch des Users: zu jedem Wissensartikel einen Podcast, den er selbst in NotebookLM
+erzeugt; dafür je Artikel eine ausformulierte MD-Datei. Danach liefert er die Audiodateien
+nach und nach, und sie kommen an den jeweiligen Eintrag. Nachtrag des Users: Es muss für
+ihn ersichtlich sein, welche Datei (und welches Audio) zu welchem Artikel der App gehört.
+
+- **Gebaut:** `notebooklm/` mit 111 Dateien und `Übersicht.md` (`npm run podcast:quellen`,
+  `src/podcast/quelltext.ts`). Ordner wie das Themen-Register der App, Datei = Nummer
+  001–111 + App-Titel. Ablauf für den User und NotebookLM-Grenzen: `docs/podcasts.md`.
+- **Alte Einträge:** Der User vermutete ausformulierte Texte in Akademie oder Leitstand.
+  Leitstand: nichts (Agenten-Werkzeug). Akademie: keine Prosa, aber je Grundlagen-Artikel
+  Karteikarten, Quiz-Begründungen und Szenario-„Vertiefungen“ (2.000–16.000 Wörter) —
+  Grundlage der 41 Vertiefungen in `src/podcast/vertiefungen/` (je 600–900 Wörter, 2–5
+  Quellen, alle am 28.09.2026 abgerufen; von sieben Agenten geschrieben, von mir gegen die
+  Quellen stichprobenartig geprüft, jede Quelle erreichbar oder bekannt bot-gesperrt).
+- **Nächster Schritt, sobald die erste Audiodatei kommt:** Nummer → Artikel-ID über
+  `podcastQuellen(...).dateien` (Feld `nummer`), dann die Einbindung in die App bauen
+  (Ablage, Format, Abspieler am Artikel). NotebookLM liefert laut Drittquellen WAV; die
+  erste Datei zeigt es. Offene Produktfrage an den User: sollen die Podcasts auch ins
+  Paket für den Freund (Installergröße) oder nur auf dem Laptop liegen?
+- **Veraltete Aussagen in den App-Artikeln (Grundlagen, aus der Akademie exportiert),**
+  gefunden beim Schreiben der Vertiefungen; die Vertiefungen haben den richtigen Stand, die
+  App zeigt noch den alten. Korrektur gehört in die Akademie — deren aktueller Stand liegt
+  aber nur auf dem anderen Rechner (`c785dbb`, siehe `CLAUDE.md` → Inhalt):
+  - `timeline`: „Verbote (Art. 5), KI-Kompetenz (Art. 4) und Transparenz (Art. 50) bleiben
+    unverändert“ ist falsch — Art. 4 neu gefasst, zwei neue Verbote ab 02.12.2026,
+    Übergangsfrist Art. 50 Abs. 2 bis 02.12.2026 (VO (EU) 2026/1744). Anhang I war
+    ursprünglich der 02.08.2027, nicht der 02.08.2026.
+  - `ki-kompetenz`: „sicherstellen“ / „Betreiber müssen … sorgen“ — seit 27.07.2026
+    „Maßnahmen … unterstützen“, kein garantiertes Niveau; trifft Anbieter und Betreiber.
+  - `verbote`: acht statt künftig zehn Verbote (lit. ba/bb ab 02.12.2026).
+  - `owasp`: „Ausgabe 2025“, LLM06/LLM07 — seit August 2026 gilt die Fassung 2026
+    (Excessive Agency = LLM03:2026, Hidden Context Exposure = LLM08:2026).
+  - `datensouveraenitaet`: „C5:2026 läuft“ — final seit März 2026, Testate ab 01.06.2027.
+  - `aleph-alpha`: Stand April 2026 — Vereinbarung mit Cohere am 16.09.2026 unterzeichnet.
+  - `oekosystem-de`: Bitkom 36 % (2025) — Bitkom 14.09.2026: 57 %.
+  - `branchen-praxis`: F13 „auf Aleph-Alpha-Technik, gehostet auf STACKIT“ gilt nur für den
+    Prototyp; die Vollversion läuft ohne Aleph Alpha bei BITBW. Telekom: fast 10 Mio.
+    Dialoge (2024) statt 4 Mio. (2022).
+  - `iso-42001-kein-freibrief`, `harmonisierung`: EN 18286 im Juni 2026 angenommen,
+    Fundstelle im Amtsblatt steht noch aus.
+  - `change-management`, `tdm-urheberrecht`, `mitbestimmung`: Einleitung überzogen
+    (Vertiefungen ersetzen sie über das Feld `einleitung`).
+  - Tote Quellen-Links in der Akademie: IBM `…/ai-maturity`, `…/ai-strategy`,
+    `…/ai-adoption`, `…/proof-of-concept` leiten auf die IBM-Übersicht um.
+- **In der Akademie auf dem Laptop, nicht in der Enzyklopädie:** vier Artikel „Lokale KI“
+  (`lokale-ki-*`, ungepushte Commits vom 15.07.2026) — kommen erst mit einem
+  zusammengeführten Akademie-Stand in die App.
 
 ## Import ins Tagebuch (28.09.2026, Version 0.2.0)
 

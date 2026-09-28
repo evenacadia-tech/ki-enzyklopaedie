@@ -186,7 +186,19 @@ npm test
 ```
 
 Ohne Pfad wird `../Projekte/Vorbereitung Probetag Avarno` angenommen. Der Export
-schreibt `src/inhalt/artikel.json` mit `meta.quelle` = Akademie-Commit.
+schreibt `src/inhalt/artikel.json` mit `meta.quelle` = Akademie-Commit. Würde er Artikel
+entfernen (etwa aus einem älteren Klon der Akademie), bricht er ab und nennt sie;
+`--verlust-ok` am Ende erzwingt den Export.
+
+**Danach immer** `npm run podcast:quellen` — die Quellen für die Podcasts (siehe unten)
+müssen zum Artikeltext passen.
+
+## Podcasts
+
+`npm run podcast:quellen` schreibt nach `notebooklm/` je Artikel eine Markdown-Datei, aus
+der in Google NotebookLM ein Podcast (Audio-Übersicht) entsteht. Die 41 Kurzartikel der
+Grundlagen stehen darin in einer ausführlichen Fassung (`src/podcast/vertiefungen/`).
+Ablauf, Grenzen von NotebookLM und der Text für „Anpassen“: `docs/podcasts.md`.
 
 **Eigene Sammlungen:** Artikel direkt in `src/inhalt/sammlungen/<sammlung>/block-*.ts`
 schreiben (Typ `EigenerArtikel` in `src/inhalt/typen.ts`; nur `abschnitte`, der flache
@@ -204,12 +216,14 @@ src/inhalt/      artikel.json (Akademie-Export) · sammlungen/ (eigene Sammlunge
 src/tagebuch/    modell.ts (Kalender-Arithmetik, KW, Fragen, Jahresbilanz, Farben, Datenformat) · speicher.ts (Datei/Browser) · zustand.ts (verzögerte Sicherung) · suche.ts · export.ts (Markdown) · import.ts (exportierte Datei lesen, mit dem Bestand abgleichen)
 src/dokumente/   modell.ts (Verzeichnis, Abteilungen, Anhänge je Tag, Suche, Größen) · speicher.ts (Ordner/Browser) · zustand.ts (Import, Entfernen, verzögerte Sicherung) · dialoge.ts (Dateiauswahl, Rückfrage) · ablage.ts (Hineinziehen)
 src/speicher/    json.ts (gemeinsamer Zugriff auf tagebuch.json und dokumente.json)
+src/podcast/     quelltext.ts (NotebookLM-Quelle je Artikel) · vertiefungen/ (ausführliche Fassungen der Grundlagen-Kurzartikel)
 src/suche/       Suche mit Faltung, Ranking, Snippets, Hervorhebung
 src/komponenten/ Kopf (Bereichs-Umschalter) · Seitenleiste · ArtikelAnsicht (mit Lesestrecke) · Start (mit Weiterlesen) · NichtGefunden · TagebuchLeiste (Suche, Kalender, Jahr, Fragen, Farbfilter, Export) · TagebuchImport (Dateiwahl, Vorschau, Wahl bei abweichenden Tagen) · TagebuchAnsicht (Farbwahl) · TagebuchAnhaenge · DokumenteLeiste · DokumenteUebersicht · DokumentAnsicht (Vorschau) · DokumentTeile · Markiert
 src/router.ts    Hash-Router (#/, #/artikel/<id>, #/tagebuch[/<datum>], #/dokumente[/<kennung>])
 src/einstellungen.ts  Schriftgröße + Register-Modus (localStorage)
 src/lesefortschritt.ts  gelesene Artikel (localStorage)
 src-tauri/       dünne Tauri-2-Hülle (ein Fenster, Opener-Plugin für Quellen-Links und Dokumente, Dialog-Plugin für Export, Dateiauswahl und Rückfrage, Window-State-Plugin, Asset-Protokoll für die Vorschau, eigene Commands für die JSON-Dateien und die Dokumente) · installer/ (deutsche Texte und Seitenbild des Installers)
-scripts/         export-aus-akademie.mts · gen-icon.mjs · gen-installer-bild.mjs · nativ-beweis.mjs · os-beweis.mjs + os-helfer.ps1 · weitergabe.mjs + weitergabe-liesmich.txt · installer-beweis.ps1
-docs/            NEXT-SESSION.md (Übergabe) · bilder/ (Screenshots)
+scripts/         export-aus-akademie.mts · podcast-quellen.mts · gen-icon.mjs · gen-installer-bild.mjs · nativ-beweis.mjs · os-beweis.mjs + os-helfer.ps1 · weitergabe.mjs + weitergabe-liesmich.txt · installer-beweis.ps1
+docs/            NEXT-SESSION.md (Übergabe) · podcasts.md (Ablauf NotebookLM) · bilder/ (Screenshots)
+notebooklm/      erzeugte Podcast-Quellen, eine Datei je Artikel (Ordner wie das Themen-Register, Nummer + App-Titel) · Übersicht.md
 ```
