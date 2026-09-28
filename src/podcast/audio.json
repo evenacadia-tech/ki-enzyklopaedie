@@ -42,6 +42,30 @@
       "sekunden": 1311.37,
       "bytes": 5359863,
       "quelle": "7. Wann_KI-Tools_im_Unternehmen_zum_Hochrisiko_werden.m4a"
+    },
+    "ki-kompetenz": {
+      "titel": "Die gesetzliche KI-Schulungspflicht im Unternehmen",
+      "sekunden": 872.21,
+      "bytes": 3563079,
+      "quelle": "8. Die_gesetzliche_KI-Schulungspflicht_im_Unternehmen.m4a"
+    },
+    "tdm-urheberrecht": {
+      "titel": "Rechtssicheres KI-Training nach Paragraph 44b",
+      "sekunden": 1136.48,
+      "bytes": 4648439,
+      "quelle": "9. Rechtssicheres_KI-Training_nach_Paragraph_44b.m4a"
+    },
+    "transparenz": {
+      "titel": "15 Millionen Euro Strafe für KI-Marketingfehler",
+      "sekunden": 1435.18,
+      "bytes": 5872924,
+      "quelle": "10. 15_Millionen_Euro_Strafe_für_KI-Marketingfehler.m4a"
+    },
+    "verbote": {
+      "titel": "Was Entwickler niemals programmieren dürfen",
+      "sekunden": 814.65,
+      "bytes": 3326905,
+      "quelle": "11. Was_Entwickler_niemals_programmieren_dürfen.m4a"
     }
   }
 }

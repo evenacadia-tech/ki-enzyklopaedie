@@ -1,7 +1,7 @@
 {
   "name": "ki-enzyklopaedie",
   "private": true,
-  "version": "0.4.0",
+  "version": "0.4.1",
   "type": "module",
   "description": "KI-Enzyklopädie — reine Lese-App: quellenbelegte, quervernetzte Artikel zu KI-Consulting, EU AI Act, Governance und KI-Ethik.",
   "scripts": {
