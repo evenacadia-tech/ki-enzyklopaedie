@@ -4,9 +4,10 @@ import globals from 'globals';
 import { defineConfig, globalIgnores } from 'eslint/config';
 
 // Flat Config (ESLint 10): js.recommended + typescript-eslint.recommended, nicht
-// typgeprüft (schnell, dependency-arm). src-tauri ist Rust/Config, kein Lint-Ziel.
+// typgeprüft (schnell, dependency-arm). src-tauri ist Rust/Config, kein Lint-Ziel;
+// .playwright-mcp (Arbeitsbilder, Arbeitsskripte) und weitergabe sind nicht eingecheckt.
 export default defineConfig([
-  globalIgnores(['dist', 'node_modules', 'coverage', 'src-tauri']),
+  globalIgnores(['dist', 'node_modules', 'coverage', 'src-tauri', '.playwright-mcp', 'weitergabe']),
   js.configs.recommended,
   tseslint.configs.recommended,
   {

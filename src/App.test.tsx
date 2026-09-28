@@ -4,6 +4,7 @@ import { App } from './App';
 import { enzyklopaedie } from './inhalt';
 import { STRATEGIE_ID } from './inhalt/sammlungen/strategie';
 import { GELESEN_KEY, _setzeGelesenFuerTests } from './lesefortschritt';
+import { exportiereMarkdown } from './tagebuch/export';
 import { formatiereTagLang, heute } from './tagebuch/modell';
 import { BROWSER_KEY } from './tagebuch/speicher';
 import { konfiguriereTagebuch } from './tagebuch/zustand';
@@ -352,6 +353,106 @@ describe('Tagebuch', () => {
     expect(objectUrl).toHaveBeenCalledTimes(1);
     expect(await screen.findByRole('button', { name: 'Exportiert ✓' })).toBeInTheDocument();
     klick.mockRestore();
+  });
+
+  const waehleDatei = (inhalt: string, name = 'tagebuch-2026-09-27.md') =>
+    fireEvent.change(screen.getByLabelText('Exportierte Tagebuch-Datei'), {
+      target: { files: [new File([inhalt], name, { type: 'text/markdown' })] },
+    });
+  const gespeichert = () => JSON.parse(window.localStorage.getItem(BROWSER_KEY) ?? '{"tage":{}}').tage;
+
+  it('importiert eine exportierte Datei: Vorschau, Wahl bei abweichenden Tagen, dann geschrieben', async () => {
+    const imTagebuch = { text: 'Im Tagebuch.', markiert: false, ereignis: '', farbe: 'gold', geaendert: '2026-09-26T10:00:00.000Z' };
+    window.localStorage.setItem(BROWSER_KEY, JSON.stringify({ version: 1, tage: { '2026-09-26': imTagebuch } }));
+    render(<App />);
+    setzeHash('#/tagebuch/2026-09-26');
+    fireEvent.click(await screen.findByRole('button', { name: 'Importieren' }));
+    waehleDatei(
+      exportiereMarkdown(
+        {
+          '2026-09-10': { text: 'Erster Tag.', markiert: false, ereignis: '', farbe: 'gold', geaendert: '' },
+          '2026-09-26': { text: 'Aus der Datei.', markiert: false, ereignis: '', farbe: 'gold', geaendert: '' },
+          '2026-10-02': { text: '', markiert: true, ereignis: 'Kickoff', farbe: 'salbei', geaendert: '' },
+        },
+        new Date(),
+        new Map([['2026-09-10', [{ name: 'Folien.pptx', datei: 'abc123xyz0_Folien.pptx' }]]]),
+      ),
+    );
+
+    const tafel = within(await screen.findByRole('region', { name: 'Import' }));
+    expect(tafel.getByText('tagebuch-2026-09-27.md')).toBeInTheDocument();
+    const zahl = (begriff: string) => tafel.getByText(begriff).nextElementSibling;
+    expect(zahl('In der Datei')).toHaveTextContent('3 Tage');
+    expect(zahl('Neu')).toHaveTextContent('2');
+    expect(zahl('Schon vorhanden')).toHaveTextContent('0');
+    expect(zahl('Anders im Tagebuch')).toHaveTextContent('1');
+    expect(tafel.getByText(/Die Datei nennt 1 Anhang nur beim Namen/)).toBeInTheDocument();
+    // Der abweichende Tag ist genannt und verlinkt; vorgewählt ist die vorsichtige Wahl.
+    const wahl = within(tafel.getByRole('group', { name: /Ein Tag steht im Tagebuch anders/ }));
+    expect(wahl.getByRole('link', { name: '26.09.2026' })).toHaveAttribute('href', '#/tagebuch/2026-09-26');
+    expect(wahl.getByRole('radio', { name: 'Tagebuch behalten' })).toBeChecked();
+    expect(tafel.getByRole('button', { name: '2 Tage importieren' })).toBeInTheDocument();
+    // Vor der Bestätigung ist nichts geschrieben.
+    expect(Object.keys(gespeichert())).toEqual(['2026-09-26']);
+
+    fireEvent.click(wahl.getByRole('radio', { name: 'Durch die Datei ersetzen' }));
+    fireEvent.click(tafel.getByRole('button', { name: '3 Tage importieren' }));
+    expect(await screen.findByText('3 Tage importiert.')).toHaveAttribute('role', 'status');
+    expect(screen.queryByRole('region', { name: 'Import' })).not.toBeInTheDocument();
+
+    const tage = gespeichert();
+    expect(Object.keys(tage).sort()).toEqual(['2026-09-10', '2026-09-26', '2026-10-02']);
+    expect(tage['2026-09-26'].text).toBe('Aus der Datei.');
+    expect(tage['2026-10-02']).toMatchObject({ markiert: true, ereignis: 'Kickoff', farbe: 'salbei' });
+    // Der offene Tag zeigt sofort die Fassung der Datei, die Zählung stimmt.
+    expect(screen.getByRole('textbox', { name: 'Gedanken zu diesem Tag' })).toHaveValue('Aus der Datei.');
+    expect(screen.getByText('3 Einträge · 1 Ereignis')).toBeInTheDocument();
+  });
+
+  it('lässt vorhandene Tage stehen, solange man nichts anderes wählt, und bricht ohne Schaden ab', async () => {
+    const imTagebuch = { text: 'Im Tagebuch.', markiert: false, ereignis: '', farbe: 'gold', geaendert: '2026-09-26T10:00:00.000Z' };
+    window.localStorage.setItem(BROWSER_KEY, JSON.stringify({ version: 1, tage: { '2026-09-26': imTagebuch } }));
+    render(<App />);
+    setzeHash('#/tagebuch/2026-09-26');
+    await screen.findByRole('button', { name: 'Importieren' });
+    const datei = exportiereMarkdown(
+      {
+        '2026-09-10': { text: 'Erster Tag.', markiert: false, ereignis: '', farbe: 'gold', geaendert: '' },
+        '2026-09-26': { text: 'Aus der Datei.', markiert: false, ereignis: '', farbe: 'gold', geaendert: '' },
+      },
+      new Date(),
+    );
+
+    waehleDatei(datei);
+    fireEvent.click(within(await screen.findByRole('region', { name: 'Import' })).getByRole('button', { name: 'Abbrechen' }));
+    expect(screen.queryByRole('region', { name: 'Import' })).not.toBeInTheDocument();
+    expect(gespeichert()).toEqual({ '2026-09-26': imTagebuch });
+
+    // Dieselbe Datei noch einmal, diesmal bestätigt — mit der vorgewählten, vorsichtigen Wahl.
+    waehleDatei(datei);
+    fireEvent.click(within(await screen.findByRole('region', { name: 'Import' })).getByRole('button', { name: '1 Tag importieren' }));
+    expect(await screen.findByText('1 Tag importiert.')).toBeInTheDocument();
+    expect(gespeichert()['2026-09-26']).toEqual(imTagebuch);
+    expect(gespeichert()['2026-09-10'].text).toBe('Erster Tag.');
+
+    // Ein drittes Mal: der neue Tag ist jetzt da, übrig bleibt nur der abweichende.
+    waehleDatei(datei);
+    const tafel = within(await screen.findByRole('region', { name: 'Import' }));
+    expect(tafel.getByText('Mit dieser Wahl ändert der Import nichts.')).toBeInTheDocument();
+    expect(tafel.queryByRole('button', { name: /importieren/ })).not.toBeInTheDocument();
+    fireEvent.keyDown(tafel.getByRole('button', { name: 'Schließen' }), { key: 'Escape' });
+    expect(screen.queryByRole('region', { name: 'Import' })).not.toBeInTheDocument();
+  });
+
+  it('lehnt eine fremde Datei ab und schreibt nichts', async () => {
+    render(<App />);
+    setzeHash('#/tagebuch');
+    await screen.findByRole('button', { name: 'Importieren' });
+    waehleDatei('# Einkaufsliste\n\n- Brot\n', 'einkauf.md');
+    expect(await screen.findByRole('alert')).toHaveTextContent('Import fehlgeschlagen: In der Datei steht kein Tagebuchtag.');
+    expect(screen.queryByRole('region', { name: 'Import' })).not.toBeInTheDocument();
+    expect(window.localStorage.getItem(BROWSER_KEY)).toBeNull();
+    expect(screen.getByRole('button', { name: 'Importieren' })).toBeEnabled();
   });
 });
 

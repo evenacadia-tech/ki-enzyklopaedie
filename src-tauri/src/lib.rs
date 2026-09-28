@@ -1,5 +1,5 @@
 // Dünne Hülle: ein Fenster, das statische Frontend, das Opener-Plugin (Quellen-Links,
-// Dokumente öffnen und im Ordner zeigen), das Dialog-Plugin (Export, Dateiauswahl,
+// Dokumente öffnen und im Ordner zeigen), das Dialog-Plugin (Export, Import, Dateiauswahl,
 // Rückfrage) und das Window-State-Plugin (Fenstergröße und -lage merken).
 //
 // Im App-Datenordner liegen zwei JSON-Dateien — `tagebuch.json` und `dokumente.json`
@@ -27,6 +27,10 @@ const ID_LAENGE: usize = 10;
 const ID_ZEICHEN: &[u8; 36] = b"abcdefghijklmnopqrstuvwxyz0123456789";
 /// Längster Dateiname (in Zeichen), den ein Import behält — der Rest wird vor der Endung gekürzt.
 const NAME_MAX: usize = 120;
+/// Was sich ins Tagebuch importieren lässt: der Export (.md) und Textdateien.
+const IMPORT_ENDUNGEN: [&str; 3] = ["md", "markdown", "txt"];
+/// Größte Datei, die der Import liest — ein Tagebuch aus Jahrzehnten bleibt weit darunter.
+const IMPORT_MAX: u64 = 16 * 1024 * 1024;
 /// Dateitypen, die „Öffnen“ starten statt anzeigen würde. Solche Dateien lassen sich
 /// importieren und im Ordner zeigen, aber nicht aus der App heraus ausführen.
 const AUSFUEHRBAR: [&str; 22] = [
@@ -122,6 +126,54 @@ fn datei_schreibe(pfad: String, inhalt: String) -> Result<(), String> {
         .ok_or_else(|| format!("Kein Dateiname in {pfad}"))?;
     let temp = ziel.with_file_name(format!("{name}.tmp"));
     schreibe_atomar(&ziel, &temp, None, inhalt.as_bytes())
+}
+
+/// Liest eine vom Nutzer im Öffnen-Dialog gewählte Textdatei (Import ins Tagebuch).
+#[tauri::command]
+fn datei_lese(pfad: String) -> Result<String, String> {
+    lese_text(Path::new(&pfad))
+}
+
+/// Nur Textdateien mit bekannter Endung, nur echte Dateien, höchstens `IMPORT_MAX` Bytes.
+/// Verstanden wird UTF-8 (so schreibt der Export) und, an der Kennung am Dateianfang
+/// erkannt, UTF-16 — so speichert ein älterer Windows-Editor als „Unicode“.
+fn lese_text(pfad: &Path) -> Result<String, String> {
+    let typ = endung(&pfad.to_string_lossy());
+    if !IMPORT_ENDUNGEN.contains(&typ.as_str()) {
+        return Err(format!(
+            "{} lässt sich nicht importieren: erwartet wird eine Textdatei (.md, .markdown, .txt).",
+            pfad.display()
+        ));
+    }
+    let meta = fs::metadata(pfad).map_err(|e| format!("{} nicht lesbar: {e}", pfad.display()))?;
+    if !meta.is_file() {
+        return Err(format!("{} ist keine Datei.", pfad.display()));
+    }
+    if meta.len() > IMPORT_MAX {
+        return Err(format!(
+            "{} ist zu groß für einen Import ({} MB, höchstens {} MB).",
+            pfad.display(),
+            meta.len() / 1024 / 1024,
+            IMPORT_MAX / 1024 / 1024
+        ));
+    }
+    let bytes = fs::read(pfad).map_err(|e| format!("{} nicht lesbar: {e}", pfad.display()))?;
+    let text = if let Some(rest) = bytes.strip_prefix(&[0xFF, 0xFE]) {
+        aus_utf16(rest, u16::from_le_bytes)
+    } else if let Some(rest) = bytes.strip_prefix(&[0xFE, 0xFF]) {
+        aus_utf16(rest, u16::from_be_bytes)
+    } else {
+        String::from_utf8(bytes).ok()
+    };
+    text.ok_or_else(|| format!("{} ist keine Textdatei in UTF-8.", pfad.display()))
+}
+
+fn aus_utf16(bytes: &[u8], wort: fn([u8; 2]) -> u16) -> Option<String> {
+    if bytes.len() % 2 != 0 {
+        return None;
+    }
+    let woerter: Vec<u16> = bytes.chunks_exact(2).map(|p| wort([p[0], p[1]])).collect();
+    String::from_utf16(&woerter).ok()
 }
 
 /// Erst vollständig in `temp` schreiben (mit fsync), dann — wenn `sicherung`
@@ -394,6 +446,7 @@ pub fn run() {
             json_lese,
             json_schreibe,
             datei_schreibe,
+            datei_lese,
             dokumente_ordner,
             dokument_importiere,
             dokument_pfad,
@@ -563,6 +616,52 @@ mod tests {
         schreibe_atomar(&ziel, &temp, None, "# Tagebuch\n".as_bytes()).unwrap();
         assert_eq!(fs::read_to_string(&ziel).unwrap(), "# Tagebuch\n");
         assert!(!temp.exists());
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn import_liest_nur_textdateien() {
+        let dir = testordner("tagebuch-import");
+        let text = "# Tagebuch\n\n## Samstag, 26. September 2026\n\nGrüße, 日本 und „Zitat“.\n";
+
+        let utf8 = dir.join("tagebuch-2026-09-26.md");
+        fs::write(&utf8, text).unwrap();
+        assert_eq!(lese_text(&utf8).unwrap(), text);
+
+        // Großgeschriebene Endung und die Kennung von UTF-8 am Anfang (entfernt das Frontend).
+        let mit_bom = dir.join("MIT-BOM.MD");
+        fs::write(&mit_bom, [&[0xEF, 0xBB, 0xBF][..], text.as_bytes()].concat()).unwrap();
+        assert_eq!(lese_text(&mit_bom).unwrap(), format!("\u{FEFF}{text}"));
+
+        // „Unicode“ des älteren Windows-Editors: UTF-16 mit Kennung, in beiden Byte-Folgen.
+        let worte: Vec<u16> = text.encode_utf16().collect();
+        let le = dir.join("utf16-le.txt");
+        let mut bytes = vec![0xFF, 0xFE];
+        bytes.extend(worte.iter().flat_map(|w| w.to_le_bytes()));
+        fs::write(&le, &bytes).unwrap();
+        assert_eq!(lese_text(&le).unwrap(), text);
+        let be = dir.join("utf16-be.markdown");
+        let mut bytes = vec![0xFE, 0xFF];
+        bytes.extend(worte.iter().flat_map(|w| w.to_be_bytes()));
+        fs::write(&be, &bytes).unwrap();
+        assert_eq!(lese_text(&be).unwrap(), text);
+
+        // Abgelehnt: fremde Endung, Ordner, fehlende Datei, Bytes, die kein Text sind.
+        let json = dir.join("tagebuch.json");
+        fs::write(&json, "{}").unwrap();
+        assert!(lese_text(&json).unwrap_err().contains("erwartet wird eine Textdatei"));
+        assert!(lese_text(&dir.join("ohne-endung")).is_err());
+        let ordner = dir.join("ordner.md");
+        fs::create_dir_all(&ordner).unwrap();
+        assert!(lese_text(&ordner).unwrap_err().contains("ist keine Datei"));
+        assert!(lese_text(&dir.join("fehlt.md")).is_err());
+        let ansi = dir.join("ansi.md");
+        fs::write(&ansi, [b'G', b'r', 0xFC, 0xDF, b'e']).unwrap();
+        assert!(lese_text(&ansi).unwrap_err().contains("keine Textdatei in UTF-8"));
+        let halb = dir.join("halb.md");
+        fs::write(&halb, [0xFF, 0xFE, b'a']).unwrap();
+        assert!(lese_text(&halb).is_err());
+
         let _ = fs::remove_dir_all(&dir);
     }
 

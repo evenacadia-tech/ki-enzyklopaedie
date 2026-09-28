@@ -2,6 +2,7 @@
 // Nativer Beweis: startet die GEBAUTE .exe mit WebView2-Debug-Port und prüft am echten
 // Fenster, was Tests im Browser nicht zeigen können:
 //   · Tagebuch: Eintrag schreiben, markieren, Farbe wählen → steht in tagebuch.json;
+//     eine exportierte Datei importieren → neue Tage kommen dazu, vorhandene bleiben;
 //   · Dokumente: Dateien über das Hineinziehen-Ereignis importieren → Kopie liegt in
 //     dokumente/, Eintrag in dokumente.json; Vorschau von Bild und PDF über das
 //     Asset-Protokoll; Anhang am Tagebuchtag; Entfernen löscht die Kopie;
@@ -21,8 +22,8 @@
 // nicht bedienbar; entfernt wird hier über den Command. Rückfrage, echtes Ziehen aus dem
 // Explorer und Öffnen prüft `npm run os:beweis` (bewegt die Maus, öffnet Fenster).
 //
-// Voraussetzung: Windows, gebaute src-tauri/target/release/ki-enzyklopaedie.exe, keine
-// laufende Instanz der App.
+// Voraussetzung: Windows, PowerShell 7 (`pwsh`, für den Öffnen-Dialog des Imports),
+// gebaute src-tauri/target/release/ki-enzyklopaedie.exe, keine laufende Instanz der App.
 import { spawn } from 'node:child_process';
 import {
   copyFileSync,
@@ -101,6 +102,7 @@ const PDF = join(quellen, 'Beweis Vertrag.pdf');
 const NOTIZ = join(quellen, 'Beweis Anhang.txt');
 const SKRIPT = join(quellen, 'Beweis Start.bat');
 const FALSCH = join(quellen, 'Beweis Falsch.pdf');
+const IMPORT = join(quellen, 'tagebuch-2026-09-27.md');
 copyFileSync(resolve('src-tauri/icons/128x128@2x.png'), BILD);
 // Heißt .pdf, ist aber eine Webseite — darf nie im Vorschau-Rahmen landen.
 writeFileSync(FALSCH, '<html><body><script>document.title = "darf nie laufen"</script></body></html>');
@@ -129,6 +131,29 @@ function minimalesPdf(text) {
   for (const s of stellen) pdf += `${String(s).padStart(10, '0')} 00000 n \n`;
   pdf += `trailer\n<< /Size ${objekte.length + 1} /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF\n`;
   return pdf;
+}
+
+/**
+ * Startet den Helfer, der den nächsten Dialog des Betriebssystems mit diesem Titel
+ * beantwortet. Liefert, was er meldet: { ok, meldung }.
+ */
+function beantworteDialog(titel, pfad) {
+  return new Promise((fertig) => {
+    const helfer = spawn('pwsh', ['-NoProfile', '-File', resolve('scripts/dialog-helfer.ps1'), '-Titel', titel, '-Pfad', pfad], {
+      stdio: ['ignore', 'pipe', 'pipe'],
+    });
+    let aus = '';
+    helfer.stdout.on('data', (d) => (aus += d));
+    helfer.stderr.on('data', (d) => (aus += d));
+    helfer.on('error', (e) => fertig({ ok: false, meldung: `pwsh nicht startbar: ${e.message}` }));
+    helfer.on('close', () => {
+      try {
+        fertig(JSON.parse(aus.trim().split(/\r?\n/).pop()));
+      } catch {
+        fertig({ ok: false, meldung: aus.trim() || 'Der Helfer hat nichts gemeldet.' });
+      }
+    });
+  });
 }
 
 const kind = spawn(exe, [], {
@@ -321,6 +346,62 @@ try {
   pruefe(bericht.anhang.klammerImKalender, 'Der Tag mit Anhang zeigt keine Klammer im Kalender.');
   await page.screenshot({ path: join(ausgabe, 'nativ-tagebuch.png') });
 
+  // 5a. Import: eine exportierte Datei stellt Tage wieder her. Der Öffnen-Dialog ist ein
+  //     Fenster des Betriebssystems und per Debug-Port nicht bedienbar — ihn beantwortet
+  //     `dialog-helfer.ps1` über Fensternachrichten (ohne Maus). Der Helfer wartet schon,
+  //     wenn der Knopf gedrückt wird.
+  const IMPORT_TEXT = 'Aus der Datei: Grüße mit Umlauten — äöüß „Zitat“.';
+  const importInhalt = [
+    '# Tagebuch',
+    '',
+    'Stand: 27.09.2026, 14:32 · 3 Einträge · 2 besondere Ereignisse',
+    '',
+    '## Donnerstag, 10. September 2026',
+    '',
+    IMPORT_TEXT,
+    '',
+    `## Samstag, 26. September 2026`,
+    '',
+    `**Ereignis (Salbei):** ${EREIGNIS}`,
+    '',
+    TEXT,
+    '',
+    '## Freitag, 2. Oktober 2026',
+    '',
+    '**Ereignis (Kupfer):** Kickoff',
+    '',
+  ].join('\n');
+  pruefe((await rufe('datei_schreibe', { pfad: IMPORT, inhalt: importInhalt })).ok, 'Die Datei für den Import ließ sich nicht schreiben.');
+  const gelesen = await rufe('datei_lese', { pfad: IMPORT });
+  pruefe(gelesen.ok && gelesen.wert === importInhalt, `datei_lese liefert nicht, was datei_schreibe schrieb: ${gelesen.fehler ?? ''}`);
+  const dialog = beantworteDialog('Tagebuch importieren', IMPORT);
+  const vorImport = readFileSync(datei, 'utf8');
+  await page.click('.fuss__knopf--links');
+  bericht.import = { dialog: await dialog };
+  pruefe(bericht.import.dialog.ok, `Der Öffnen-Dialog ließ sich nicht beantworten: ${bericht.import.dialog.meldung}`);
+  await page.waitForSelector('.import');
+  await pause(300);
+  bericht.import.vorschau = await page.evaluate(() => document.querySelector('.import')?.innerText.replace(/\n+/g, ' | '));
+  pruefe(readFileSync(datei, 'utf8') === vorImport, 'Schon die Vorschau des Imports hat tagebuch.json geändert.');
+  await page.screenshot({ path: join(ausgabe, 'nativ-tagebuch-import.png') });
+  await page.click('.import .knopf--haupt');
+  await page.waitForSelector('.leiste__meldung--gut');
+  const nachImport = JSON.parse(readFileSync(datei, 'utf8')).tage;
+  bericht.import.meldung = await page.evaluate(() => document.querySelector('.leiste__meldung--gut')?.textContent?.trim());
+  bericht.import.tage = Object.keys(nachImport).sort();
+  pruefe(bericht.import.meldung === '2 Tage importiert.', `Meldung nach dem Import: ${bericht.import.meldung}`);
+  pruefe(bericht.import.tage.join() === `2026-09-10,${TAG},2026-10-02`, 'Nach dem Import stehen nicht genau drei Tage in tagebuch.json.');
+  pruefe(nachImport['2026-09-10'].text === IMPORT_TEXT, 'Der importierte Text kam nicht unverändert an (Umlaute?).');
+  pruefe(
+    nachImport['2026-10-02'].markiert === true && nachImport['2026-10-02'].ereignis === 'Kickoff' && nachImport['2026-10-02'].farbe === 'kupfer',
+    'Das importierte Ereignis trägt nicht Bezeichnung und Farbe.',
+  );
+  pruefe(JSON.stringify(nachImport[TAG]) === JSON.stringify(eintrag), 'Der Import hat einen Tag angefasst, der schon genauso im Tagebuch stand.');
+  pruefe(
+    Object.keys(JSON.parse(readFileSync(join(appData, 'tagebuch.bak.json'), 'utf8')).tage).join() === TAG,
+    'tagebuch.bak.json hält nicht den Stand vor dem Import.',
+  );
+
   // 6. Dokumente: Bild zu den Zertifikaten, PDF zu den wichtigen Dokumenten.
   await geheZu('#/dokumente');
   await page.waitForSelector('[data-ablage="zertifikat"] .knopf:not([disabled])');
@@ -387,6 +468,10 @@ try {
     fremdeDateiLesen: await rufe('json_lese', { name: '..\\tagebuch.json' }),
     fremdeDateiSchreiben: await rufe('json_schreibe', { name: 'fremd.json', inhalt: '{}' }),
     ordnerImportieren: await rufe('dokument_importiere', { quelle: quellen }),
+    // Der Import ins Tagebuch liest nur Textdateien — nicht das Tagebuch selbst, kein Bild.
+    jsonAlsImportLesen: await rufe('datei_lese', { pfad: join(appData, 'tagebuch.json') }),
+    bildAlsImportLesen: await rufe('datei_lese', { pfad: BILD }),
+    ordnerAlsImportLesen: await rufe('datei_lese', { pfad: quellen }),
   };
   bericht.gesperrt = Object.fromEntries(Object.entries(gesperrt).map(([k, v]) => [k, v.ok ? 'NICHT GESPERRT' : v.fehler]));
   for (const [name, v] of Object.entries(gesperrt)) pruefe(!v.ok, `Sperre greift nicht: ${name}`);

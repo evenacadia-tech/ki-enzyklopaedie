@@ -2032,6 +2032,161 @@ a.lesestrecke__link:hover {
   color: var(--text-3);
   cursor: default;
 }
+/* Der linke Knopf steht mit seiner Schrift bündig unter der Zählung. */
+.fuss__knopf--links {
+  margin: -2px 0 -2px -7px;
+}
+/* Tagebuch: Zählung oben, Import und Export darunter — neben die Zählung passen beide nicht. */
+.leiste__fuss--zweizeilig {
+  flex-wrap: wrap;
+  row-gap: 7px;
+}
+.leiste__fuss--zweizeilig > span {
+  flex: 1 0 100%;
+}
+
+/* Gute Nachricht über der Fußzeile (Import fertig): ruhig, nicht warnend. */
+.leiste__meldung--gut {
+  color: var(--text-2);
+}
+
+/* Vorschau des Imports: was die Datei bringt, bevor geschrieben wird. Die Tafel liegt über
+   der Leiste und steht mit dem Fuß auf der Fußzeile — der Anker ist die Stelle dafür. In
+   der Höhe der Leiste hätte sie neben Kalender und Liste keinen Platz. */
+.import-anker {
+  position: relative;
+  flex: none;
+  z-index: 2;
+}
+.import {
+  position: absolute;
+  inset: auto 0 0;
+  display: grid;
+  gap: 10px;
+  /* Höchstens die Leiste ohne Fußzeile; was nicht passt, rollt — die Knöpfe bleiben stehen. */
+  max-height: calc(100vh - var(--kopf-hoehe) - 72px);
+  overflow-y: auto;
+  padding: 12px 14px 0;
+  border-top: 1px solid var(--linie-stark);
+  background: var(--flaeche-warm);
+  box-shadow: 0 -14px 28px rgba(0, 0, 0, 0.5);
+}
+/* Die Tafel bekommt den Fokus nur, damit die Tastatur dort steht — ohne Ring. */
+.import:focus-visible {
+  outline: none;
+  box-shadow: none;
+  border-radius: 0;
+}
+.import__titel {
+  margin: 0;
+  font-size: 10.5px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+.import__datei {
+  margin: -4px 0 0;
+  font-size: 13.5px;
+  color: var(--text-stark);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.import__bilanz {
+  margin: 0;
+  border-top: 1px solid var(--linie);
+  font-size: 11.5px;
+}
+.import__bilanz > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 5px 0;
+  border-bottom: 1px solid var(--linie);
+}
+.import__bilanz dt {
+  color: var(--text-3);
+}
+.import__bilanz dd {
+  margin: 0;
+  color: var(--text);
+}
+.import__wahl {
+  display: grid;
+  gap: 7px;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.import__wahl legend {
+  padding: 0;
+  margin-bottom: 6px;
+  font-size: 12.5px;
+  line-height: 1.4;
+  color: var(--text-2);
+  text-wrap: pretty;
+}
+.import__tage {
+  list-style: none;
+  display: grid;
+  gap: 3px;
+  margin: 0 0 3px;
+  padding: 0;
+  font-size: 11.5px;
+  color: var(--text-3);
+}
+.import__tage li {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 10px;
+  align-items: baseline;
+}
+.import__tage span {
+  font-size: 12.5px;
+  color: var(--text-2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.import__tage a {
+  color: var(--akzent);
+}
+.import__tage a:hover {
+  color: var(--akzent-hell);
+  text-decoration: underline;
+}
+.import__option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--text);
+  cursor: pointer;
+}
+.import__option input {
+  flex: none;
+  margin: 0;
+  accent-color: var(--akzent);
+}
+.import__hinweis {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--text-3);
+  text-wrap: pretty;
+}
+.import__knoepfe {
+  position: sticky;
+  bottom: 0;
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin: 0 -14px;
+  padding: 10px 14px 14px;
+  background: var(--flaeche-warm);
+}
 
 /* Tagesansicht */
 .tagebuch {

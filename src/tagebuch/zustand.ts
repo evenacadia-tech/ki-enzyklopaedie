@@ -1,4 +1,5 @@
 import { useSyncExternalStore } from 'react';
+import { planeImport, wendeImportAn, zuSchreiben, type GeleseneDatei, type Vorrang } from './import';
 import { DATEN_VERSION, LEER, istLeer, type Eintrag, type Tage, type TagebuchDaten } from './modell';
 import { waehleSpeicher, type TagebuchSpeicher } from './speicher';
 
@@ -12,7 +13,9 @@ import { waehleSpeicher, type TagebuchSpeicher } from './speicher';
 //     Schreiben — nichts wird überschrieben, der Fehler bleibt sichtbar);
 //   · ein Speicherfehler lässt die Änderung im Zustand und meldet ihn;
 //   · Änderungen während eines laufenden Schreibvorgangs werden danach erneut
-//     geschrieben (Schnappschuss-Vergleich).
+//     geschrieben (Schnappschuss-Vergleich);
+//   · ein Import löscht nichts und ersetzt einen vorhandenen Tag nur auf Wunsch
+//     (`tagebuch/import.ts`).
 // ─────────────────────────────────────────────────────────────────────────────
 
 export type LadeStatus = 'aus' | 'laedt' | 'bereit' | 'fehler';
@@ -112,6 +115,26 @@ export function aendereEintrag(datum: string, patch: Partial<Pick<Eintrag, 'text
   else tage[datum] = neu;
   setze({ tage, sicherung: 'ausstehend' });
   planeSicherung();
+}
+
+/**
+ * Import: übernimmt die Tage einer exportierten Datei und schreibt sofort. Gerechnet wird
+ * gegen den Bestand in diesem Augenblick, nicht gegen den der Vorschau. Liefert die Zahl
+ * der geschriebenen Tage; wirft, wenn die Sicherung scheitert (die Tage bleiben dann im
+ * Zustand und werden beim nächsten Versuch geschrieben). Ein Ladefehler sperrt auch den
+ * Import. Die Meldungen sind für den Nutzer geschrieben und werden so gezeigt.
+ */
+export async function importiereTage(datei: GeleseneDatei, vorrang: Vorrang): Promise<number> {
+  if (zustand.status !== 'bereit') throw new Error('Das Tagebuch ist nicht geladen — importiert wird nichts.');
+  const anzahl = zuSchreiben(planeImport(zustand.tage, datei), vorrang).length;
+  if (anzahl === 0) return 0;
+  setze({ tage: wendeImportAn(zustand.tage, datei, vorrang, uhr()), sicherung: 'ausstehend' });
+  await speichereJetzt();
+  if (zustand.sicherung === 'fehler') {
+    const grund = (zustand.sicherungFehler ?? 'unbekannter Fehler').replace(/\.$/, '');
+    throw new Error(`Importiert, aber noch nicht gespeichert: ${grund}. Strg+S versucht es erneut.`);
+  }
+  return anzahl;
 }
 
 function planeSicherung(): void {

@@ -35,13 +35,15 @@ import { tokenisiere } from '../suche/logic';
 import { ladeTagebuch, useTagebuch } from '../tagebuch/zustand';
 import { Klammer } from './DokumentTeile';
 import { Markiert } from './Markiert';
+import { ImportTafel, useTagebuchImport } from './TagebuchImport';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Seitenleiste im Tagebuch: Suchfeld, der Monatskalender (Woche ab Montag, immer
 // sechs Zeilen, mit Kalenderwoche) oder die Jahresübersicht (zwölf Monate mit
 // Zählern), der Hinweis auf das nächste Ereignis, darunter entweder die Treffer
 // der Suche oder die Einträge des Monats, die offenen Fragen und die markierten
-// Tage (in ihrer Farbe, nach Farbe filterbar); in der Fußzeile der Export. Tage mit
+// Tage (in ihrer Farbe, nach Farbe filterbar); in der Fußzeile Import und Export,
+// die Vorschau des Imports darüber (`TagebuchImport`). Tage mit
 // Anhängen tragen eine Büroklammer — im Kalender und in der Monatsliste. Jeder Tag ist ein echter Link
 // (#/tagebuch/<datum>) — Zurück/Vor und Deep-Links funktionieren ohne eigene
 // Logik; Pfeiltasten wandern im Raster und über den Monatsrand hinaus.
@@ -207,6 +209,7 @@ export function TagebuchLeiste({ datum, suchRef }: Props) {
     return () => clearTimeout(t);
   }, [exportLage]);
 
+  const importiert = useTagebuchImport();
   const q = query.trim();
 
   return (
@@ -596,20 +599,36 @@ export function TagebuchLeiste({ datum, suchRef }: Props) {
           {exportFehler}
         </p>
       ) : null}
-      <footer className="leiste__fuss mono">
+      {/* Bezug für die Vorschau des Imports: sie steht mit dem Fuß auf der Fußzeile. */}
+      <div className="import-anker">
+        <ImportTafel s={importiert} tage={z.tage} />
+      </div>
+      {/* Bereit: Zählung oben, Import und Export darunter — neben die Zählung passen beide nicht. */}
+      <footer className={'leiste__fuss mono' + (z.status === 'bereit' ? ' leiste__fuss--zweizeilig' : '')}>
         <span title={z.ort ? `Gespeichert in ${z.ort}` : undefined}>
           {gesamt} {gesamt === 1 ? 'Eintrag' : 'Einträge'} · {markiert.length} {markiert.length === 1 ? 'Ereignis' : 'Ereignisse'}
         </span>
         {z.status === 'bereit' ? (
-          <button
-            type="button"
-            className="fuss__knopf"
-            onClick={() => void exportiere()}
-            disabled={exportLage === 'laeuft' || (gesamt === 0 && anhaenge.size === 0)}
-            title="Alle Einträge als Markdown-Datei speichern"
-          >
-            {exportLage === 'fertig' ? 'Exportiert ✓' : exportLage === 'laeuft' ? 'Exportiert …' : 'Exportieren'}
-          </button>
+          <>
+            <button
+              type="button"
+              className="fuss__knopf fuss__knopf--links"
+              onClick={() => void importiert.beginne()}
+              disabled={!importiert.frei}
+              title="Einträge aus einer exportierten Markdown-Datei wiederherstellen"
+            >
+              {importiert.lage.art === 'fertig' ? 'Importiert ✓' : importiert.lage.art === 'liest' ? 'Liest …' : 'Importieren'}
+            </button>
+            <button
+              type="button"
+              className="fuss__knopf"
+              onClick={() => void exportiere()}
+              disabled={exportLage === 'laeuft' || (gesamt === 0 && anhaenge.size === 0)}
+              title="Alle Einträge als Markdown-Datei speichern"
+            >
+              {exportLage === 'fertig' ? 'Exportiert ✓' : exportLage === 'laeuft' ? 'Exportiert …' : 'Exportieren'}
+            </button>
+          </>
         ) : null}
       </footer>
     </aside>

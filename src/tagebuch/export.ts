@@ -19,6 +19,11 @@ import {
 // im Browser wird die Datei heruntergeladen.
 // ─────────────────────────────────────────────────────────────────────────────
 
+/** Steht im Export, wo ein markierter Tag keine Bezeichnung trägt. Der Import liest es zurück. */
+export const EREIGNIS_OHNE_NAME = 'ja';
+/** Die Zeile über der Liste der Anhänge eines Tages. */
+export const ANHAENGE_TITEL = '**Anhänge:**';
+
 export function exportDateiname(jetzt: Date = new Date()): string {
   return `tagebuch-${heute(jetzt)}.md`;
 }
@@ -49,12 +54,12 @@ export function exportiereMarkdown(tage: Tage, jetzt: Date = new Date(), anhaeng
   for (const datum of daten) {
     const e = tage[datum];
     zeilen.push(`## ${formatiereTagLang(datum)}`, '');
-    if (e?.markiert) zeilen.push(`**Ereignis (${FARBE_NAME[e.farbe]}):** ${e.ereignis.trim() || 'ja'}`, '');
+    if (e?.markiert) zeilen.push(`**Ereignis (${FARBE_NAME[e.farbe]}):** ${e.ereignis.trim() || EREIGNIS_OHNE_NAME}`, '');
     const text = (e?.text ?? '').replace(/\r\n/g, '\n').trim();
     if (text !== '') zeilen.push(text, '');
     const liste = anhaenge.get(datum) ?? [];
     if (liste.length > 0) {
-      zeilen.push('**Anhänge:**', '');
+      zeilen.push(ANHAENGE_TITEL, '');
       for (const a of liste) zeilen.push(anhangZeile(a));
       zeilen.push('');
     }

@@ -45,6 +45,7 @@ Beide Quellen laufen durch denselben Load-Guard; Querverweise zeigen in beide Ri
 | Tagebuch-Suche | Suchfeld über dem Kalender (`/`), Text und Ereignis-Bezeichnung, umlaut-tolerant; Treffer chronologisch mit Ausschnitt, Treffertage im Kalender unterstrichen |
 | Kalender | Kalenderwoche (KW) am Zeilenanfang; Klick auf den Monatsnamen öffnet die Jahresübersicht (zwölf Monate mit Zählern); Pfeiltasten wandern im Raster und über den Monatsrand hinaus, `Bild↑`/`Bild↓` wechseln den Monat, `Heute` springt zurück |
 | Export | Fußzeile der Tagebuch-Seitenleiste: **Exportieren** schreibt alle Tage als eine Markdown-Datei (nativ über Speichern-Dialog, im Browser als Download) — mit dem Farbnamen je Ereignis und den Namen der Anhänge je Tag |
+| Import | Daneben: **Importieren** liest eine exportierte Datei und stellt die Tage wieder her — Text, Markierung, Bezeichnung und Farbe. Vor dem Schreiben zeigt eine Vorschau, wie viele Tage neu sind, wie viele schon genauso dastehen und welche im Tagebuch anders stehen; für diese wählt man „Tagebuch behalten“ (vorgewählt) oder „Durch die Datei ersetzen“. Der Import löscht nie einen Tag. Nicht in der Datei und deshalb nicht wiederherstellbar: die Anhänge selbst (nur ihre Namen) und der Zeitpunkt der letzten Änderung — importierte Tage tragen den des Imports |
 | Schriftgröße | Kopfzeile rechts (Kompakt/Normal/Groß), gilt für Lesetext und Tagebuch, wird lokal gemerkt |
 | Zurück/Vor | Die Zurück-Taste kehrt an die alte Leseposition zurück; ein Link beginnt oben. Das native Fenster merkt sich Größe und Lage |
 | Deep-Link | `#/artikel/<id>` (z. B. `#/artikel/strategie-begriff`), `#/tagebuch` (heute), `#/tagebuch/2026-09-26`, `#/dokumente`, `#/dokumente/<kennung>` |
@@ -200,11 +201,11 @@ Verlagsseite Abrufe per Skript blockiert.
 
 ```
 src/inhalt/      artikel.json (Akademie-Export) · sammlungen/ (eigene Sammlungen, vereinige) · typen.ts · index.ts (Load-Guard, Register, Rückverweise)
-src/tagebuch/    modell.ts (Kalender-Arithmetik, KW, Fragen, Jahresbilanz, Farben, Datenformat) · speicher.ts (Datei/Browser) · zustand.ts (verzögerte Sicherung) · suche.ts · export.ts (Markdown)
+src/tagebuch/    modell.ts (Kalender-Arithmetik, KW, Fragen, Jahresbilanz, Farben, Datenformat) · speicher.ts (Datei/Browser) · zustand.ts (verzögerte Sicherung) · suche.ts · export.ts (Markdown) · import.ts (exportierte Datei lesen, mit dem Bestand abgleichen)
 src/dokumente/   modell.ts (Verzeichnis, Abteilungen, Anhänge je Tag, Suche, Größen) · speicher.ts (Ordner/Browser) · zustand.ts (Import, Entfernen, verzögerte Sicherung) · dialoge.ts (Dateiauswahl, Rückfrage) · ablage.ts (Hineinziehen)
 src/speicher/    json.ts (gemeinsamer Zugriff auf tagebuch.json und dokumente.json)
 src/suche/       Suche mit Faltung, Ranking, Snippets, Hervorhebung
-src/komponenten/ Kopf (Bereichs-Umschalter) · Seitenleiste · ArtikelAnsicht (mit Lesestrecke) · Start (mit Weiterlesen) · NichtGefunden · TagebuchLeiste (Suche, Kalender, Jahr, Fragen, Farbfilter, Export) · TagebuchAnsicht (Farbwahl) · TagebuchAnhaenge · DokumenteLeiste · DokumenteUebersicht · DokumentAnsicht (Vorschau) · DokumentTeile · Markiert
+src/komponenten/ Kopf (Bereichs-Umschalter) · Seitenleiste · ArtikelAnsicht (mit Lesestrecke) · Start (mit Weiterlesen) · NichtGefunden · TagebuchLeiste (Suche, Kalender, Jahr, Fragen, Farbfilter, Export) · TagebuchImport (Dateiwahl, Vorschau, Wahl bei abweichenden Tagen) · TagebuchAnsicht (Farbwahl) · TagebuchAnhaenge · DokumenteLeiste · DokumenteUebersicht · DokumentAnsicht (Vorschau) · DokumentTeile · Markiert
 src/router.ts    Hash-Router (#/, #/artikel/<id>, #/tagebuch[/<datum>], #/dokumente[/<kennung>])
 src/einstellungen.ts  Schriftgröße + Register-Modus (localStorage)
 src/lesefortschritt.ts  gelesene Artikel (localStorage)

@@ -1,9 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import type { GeleseneDatei } from './import';
 import type { TagebuchDaten } from './modell';
 import type { TagebuchSpeicher } from './speicher';
 import {
   _zustandFuerTests as zustand,
   aendereEintrag,
+  importiereTage,
   konfiguriereTagebuch,
   ladeTagebuch,
   ladeTagebuchErneut,
@@ -137,6 +139,56 @@ describe('Tagebuch-Zustand', () => {
     await speichereJetzt();
     expect(zustand().sicherung).toBe('gespeichert');
     expect(s.daten?.tage[T].text).toBe('Wichtig');
+  });
+
+  it('importiert sofort, löscht nichts und ersetzt vorhandene Tage nur auf Wunsch', async () => {
+    const alt = { text: 'Im Tagebuch.', markiert: false, ereignis: '', farbe: 'gold' as const, geaendert: 'x' };
+    const s = fakeSpeicher({ version: 1, tage: { [T]: alt, '2026-09-01': { ...alt, text: 'Bleibt.' } } });
+    konfiguriereTagebuch(s, UHR);
+    await ladeTagebuch();
+    const datei: GeleseneDatei = {
+      anhaenge: 0,
+      tage: {
+        [T]: { text: 'In der Datei.', markiert: true, ereignis: 'E', farbe: 'kupfer' },
+        '2026-10-02': { text: 'Neu.', markiert: false, ereignis: '', farbe: 'gold' },
+      },
+    };
+    expect(await importiereTage(datei, 'tagebuch')).toBe(1);
+    // Ohne Wartezeit geschrieben, der vorhandene Tag steht wie zuvor.
+    expect(s.geschrieben).toHaveLength(1);
+    expect(s.geschrieben[0].tage[T]).toBe(alt);
+    expect(s.geschrieben[0].tage['2026-10-02']).toEqual({ text: 'Neu.', markiert: false, ereignis: '', farbe: 'gold', geaendert: '2026-09-26T12:32:00.000Z' });
+    expect(Object.keys(s.geschrieben[0].tage).sort()).toEqual(['2026-09-01', T, '2026-10-02']);
+    expect(zustand().sicherung).toBe('gespeichert');
+
+    // Derselbe Import noch einmal: nichts zu tun, nichts geschrieben.
+    expect(await importiereTage(datei, 'tagebuch')).toBe(0);
+    expect(s.geschrieben).toHaveLength(1);
+
+    expect(await importiereTage(datei, 'datei')).toBe(1);
+    expect(s.geschrieben[1].tage[T]).toEqual({ text: 'In der Datei.', markiert: true, ereignis: 'E', farbe: 'kupfer', geaendert: '2026-09-26T12:32:00.000Z' });
+    expect(s.geschrieben[1].tage['2026-09-01'].text).toBe('Bleibt.');
+  });
+
+  it('importiert nicht nach einem Ladefehler und meldet, wenn die Sicherung scheitert', async () => {
+    const datei: GeleseneDatei = { anhaenge: 0, tage: { [T]: { text: 'Neu.', markiert: false, ereignis: '', farbe: 'gold' } } };
+    const s = fakeSpeicher();
+    s.ladeFehler = new Error('Datei kaputt');
+    konfiguriereTagebuch(s, UHR);
+    await ladeTagebuch();
+    await expect(importiereTage(datei, 'datei')).rejects.toThrow(/nicht geladen/);
+    expect(zustand().tage).toEqual({});
+    expect(s.geschrieben).toHaveLength(0);
+
+    s.ladeFehler = null;
+    await ladeTagebuchErneut();
+    s.schreibFehler = new Error('Platte voll');
+    await expect(importiereTage(datei, 'datei')).rejects.toThrow('Importiert, aber noch nicht gespeichert: Platte voll');
+    // Der Tag bleibt im Zustand und wird beim nächsten Versuch geschrieben.
+    expect(zustand().tage[T].text).toBe('Neu.');
+    s.schreibFehler = null;
+    await speichereJetzt();
+    expect(s.daten?.tage[T].text).toBe('Neu.');
   });
 
   it('schreibt Änderungen, die während eines laufenden Schreibvorgangs kamen, erneut', async () => {

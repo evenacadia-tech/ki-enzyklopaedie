@@ -46,7 +46,9 @@ Ordner (so in die Adresszeile des Explorers eingeben):
 
    %APPDATA%\de.evenacadia.ki-enzyklopaedie
 
-Datensicherung: diesen Ordner kopieren.
+Datensicherung: diesen Ordner kopieren. Das Tagebuch lässt sich außerdem über
+"Exportieren" als Datei sichern und über "Importieren" daraus wiederherstellen
+(beides unten links im Tagebuch).
 
 
 Neue Fassung

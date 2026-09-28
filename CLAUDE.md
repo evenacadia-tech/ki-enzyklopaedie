@@ -112,6 +112,24 @@ Zwei Quellen, ein Load-Guard (`src/inhalt/index.ts` → `vereinige` in
   (`kalenderwoche`, Donnerstag-Regel, mit Tests für 53-Wochen-Jahre).
 - Export: `src/tagebuch/export.ts` → Markdown; nativ `@tauri-apps/plugin-dialog`
   (`save`) + Command `datei_schreibe`, im Browser Blob-Download.
+- Import (User 28.09.2026: „unbedingt“, um alle Einträge aus der exportierten Datei
+  wiederherzustellen): `src/tagebuch/import.ts` liest den Export zurück — alle drei
+  Fassungen (`**Ereignis:**` ohne Farbe, mit Farbe, mit Anhängen). Wer das Format des
+  Exports ändert, ändert den Import mit; der Test „bleibt über Export → Import → Export
+  dieselbe Datei“ hält beide zusammen. Regeln: der Import LÖSCHT NIE; ein Tag, der im
+  Tagebuch anders steht, wird nur ersetzt, wenn der Nutzer „Durch die Datei ersetzen“
+  wählt (vorgewählt ist „Tagebuch behalten“); gleiche Tage bleiben unberührt. Verglichen
+  wird, was der Export festhält (`kern`: Text ohne Rand, Bezeichnung und Farbe nur bei
+  markierten Tagen, „ja“ = ohne Bezeichnung). Nicht im Export und deshalb nicht
+  wiederherstellbar: `geaendert` (importierte Tage tragen den Zeitpunkt des Imports) und
+  die Anhänge. Nativ: `open` + Command `datei_lese(pfad)` — liest nur `.md`/`.markdown`/
+  `.txt`, nur echte Dateien bis 16 MB, UTF-8 oder UTF-16 mit Kennung; im Browser ein
+  verstecktes Dateifeld. Geschrieben wird sofort (`importiereTage` in `zustand.ts`), die
+  Rust-Seite legt dabei wie immer `tagebuch.bak.json` mit dem Stand davor ab.
+- Die Vorschau des Imports liegt ÜBER der Leiste (`.import-anker` direkt vor der
+  Fußzeile, `.import` absolut darin): in der Höhe der Leiste hat sie neben Kalender und
+  Liste keinen Platz — als Block im Fluss schob sie die Fußzeile aus dem Fenster. Die
+  Fußzeile des Tagebuchs ist zweizeilig (Zählung oben, Import und Export darunter).
 - Lesefortschritt (Enzyklopädie): `src/lesefortschritt.ts`, localStorage
   `ki-enzyklopaedie.gelesen.v1`; Lesestrecke Vor/Zurück aus `enzyklopaedie.lesestrecke(id)`
   (nur Sammlungen, nicht Grundlagen). „Weiter“ markiert den aktuellen Artikel als gelesen.

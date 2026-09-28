@@ -1,15 +1,31 @@
 # Übergabe an die nächste Sitzung
 
-Stand: 2026-09-28. Die drei Wünsche vom 27.09.2026 sind gebaut und am echten Fenster
-geprüft; am 28.09.2026 kam das Paket zum Weitergeben dazu (Abschnitt unten). Es gibt
-keinen offenen Auftrag.
+Stand: 2026-09-28, Version 0.2.0. Die drei Wünsche vom 27.09.2026 sind gebaut und am
+echten Fenster geprüft; am 28.09.2026 kamen das Paket zum Weitergeben und der Import ins
+Tagebuch dazu (Abschnitte unten). Es gibt keinen offenen Auftrag.
+
+## Import ins Tagebuch (28.09.2026, Version 0.2.0)
+
+Wunsch des Users: die exportierte Markdown-Datei wieder einlesen, um alle Einträge
+wiederherzustellen.
+
+- Fußzeile der Tagebuch-Leiste: **Importieren** neben **Exportieren**. Nach der Dateiwahl
+  zeigt eine Vorschau, was die Datei bringt; geschrieben wird erst nach der Bestätigung.
+- Entscheidungen beim Bauen: der Import löscht nie; Tage, die im Tagebuch anders stehen,
+  bleiben, solange man nicht „Durch die Datei ersetzen“ wählt; das Format des Exports ist
+  unverändert, damit auch schon geschriebene Dateien sich einlesen lassen (alle drei
+  Fassungen). Importierte Tage zeigen unter „Geändert“ den Zeitpunkt des Imports — der
+  ursprüngliche steht nicht in der Datei.
+- Version auf 0.2.0, weil die App inzwischen weitergegeben wird: der Installer erkennt
+  eine installierte 0.1.0 als ältere Fassung.
 
 ## Weitergabe (28.09.2026)
 
 Wunsch des Users: ein Installer-Paket, um die App einem Freund zu geben.
 
-- `npm run tauri:build && npm run weitergabe` legt `weitergabe/KI-Enzyklopaedie-0.1.0.zip`
-  an (Installer + `LIESMICH.txt`). Eine Kopie liegt auf dem Desktop des Users.
+- `npm run tauri:build && npm run weitergabe` legt `weitergabe/KI-Enzyklopaedie-0.2.0.zip`
+  an (Installer + `LIESMICH.txt`). Zip und Installer liegen als Kopie auf dem Desktop des
+  Users.
 - Der Installer ist jetzt deutsch, trägt Icon und Seitenbild der App und bringt das
   Hilfsprogramm für WebView2 mit. Eigene deutsche Texte, weil die von Tauri gelieferten
   beim Aktualisieren einen Satz mit Lücke zeigten.
@@ -100,7 +116,7 @@ Der Laptop ist der Hauptrechner, gebaut wurde am Desktop-PC.
 1. `git pull`, `npm install`.
 2. `npm test && npm run lint && npm run build`, dann `cargo test` in `src-tauri/`.
 3. App schließen, `npm run tauri:build`, danach `npm run nativ:beweis`.
-4. Installieren: `src-tauri\target\release\bundle\nsis\KI-Enzyklopädie_0.1.0_x64-setup.exe`.
+4. Installieren: `src-tauri\target\release\bundle\nsis\KI-Enzyklopädie_<version>_x64-setup.exe`.
    Tagebuch und Dokumente bleiben bei der Installation erhalten (sie liegen in `%APPDATA%`).
 
 Beim ersten Start mit der neuen Fassung ändert sich am Tagebuch nichts: alte Markierungen
