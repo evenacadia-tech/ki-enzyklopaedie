@@ -18,7 +18,8 @@
     "tauri:installer-bild": "node scripts/gen-installer-bild.mjs",
     "nativ:beweis": "node scripts/nativ-beweis.mjs",
     "os:beweis": "node scripts/os-beweis.mjs",
-    "weitergabe": "node scripts/weitergabe.mjs"
+    "weitergabe": "node scripts/weitergabe.mjs",
+    "installer:beweis": "pwsh -NoProfile -File scripts/installer-beweis.ps1"
   },
   "dependencies": {
     "@fontsource-variable/geist": "^5.3.0",

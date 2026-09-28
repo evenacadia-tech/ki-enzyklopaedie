@@ -133,6 +133,7 @@ npm run nativ:beweis # startet die gebaute .exe, prüft Tagebuch, Dokumente, Vor
 npm run os:beweis    # zieht mit echter Maus Dateien aus dem Explorer in die App, prüft Öffnen, „Im Ordner zeigen“ und die Rückfrage vor dem Entfernen
 npm run weitergabe   # nach tauri:build: Paket zum Weitergeben (Installer + LIESMICH.txt, beides als ZIP) nach weitergabe/
 npm run tauri:installer-bild  # Seitenbild des Installers neu erzeugen (src-tauri/installer/seitenbild.bmp)
+npm run installer:beweis      # nach weitergabe: öffnet den Installer, Bild je Seite nach .playwright-mcp/ — installiert nichts (mit -- -Modus installieren doch)
 ```
 
 Voraussetzungen für die native App: Rust-Toolchain (≥ 1.77) und die Tauri-2-
@@ -208,6 +209,6 @@ src/router.ts    Hash-Router (#/, #/artikel/<id>, #/tagebuch[/<datum>], #/dokume
 src/einstellungen.ts  Schriftgröße + Register-Modus (localStorage)
 src/lesefortschritt.ts  gelesene Artikel (localStorage)
 src-tauri/       dünne Tauri-2-Hülle (ein Fenster, Opener-Plugin für Quellen-Links und Dokumente, Dialog-Plugin für Export, Dateiauswahl und Rückfrage, Window-State-Plugin, Asset-Protokoll für die Vorschau, eigene Commands für die JSON-Dateien und die Dokumente) · installer/ (deutsche Texte und Seitenbild des Installers)
-scripts/         export-aus-akademie.mts · gen-icon.mjs · gen-installer-bild.mjs · nativ-beweis.mjs · os-beweis.mjs + os-helfer.ps1 · weitergabe.mjs + weitergabe-liesmich.txt
+scripts/         export-aus-akademie.mts · gen-icon.mjs · gen-installer-bild.mjs · nativ-beweis.mjs · os-beweis.mjs + os-helfer.ps1 · weitergabe.mjs + weitergabe-liesmich.txt · installer-beweis.ps1
 docs/            NEXT-SESSION.md (Übergabe) · bilder/ (Screenshots)
 ```

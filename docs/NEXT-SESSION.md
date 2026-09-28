@@ -16,7 +16,9 @@ Wunsch des Users: ein Installer-Paket, um die App einem Freund zu geben.
 - Geprüft: 125 Tests (Vitest), 13 Tests (cargo), Lint, Build, `nativ:beweis`; Installer am
   echten Fenster Seite für Seite durchlaufen (Bilder angesehen), auch die Seite, die beim
   Aktualisieren über eine ältere Fassung erscheint; danach lief die installierte App,
-  Tagebuch und Verknüpfungen unverändert.
+  Tagebuch und Verknüpfungen unverändert. Wiederholbar mit `npm run installer:beweis`.
+- Der User telefoniert oft über Teams; Tests, Lint und Build lassen dann den Ton stottern.
+  Schwere Läufe erst starten, wenn das Mikrofon frei ist.
 - NICHT geprüft: Installation auf einem fremden Rechner ohne WebView2 und die Warnung von
   SmartScreen (erscheint nur bei Dateien aus dem Netz). `os:beweis` lief nicht — der User
   saß am Rechner, und an Maus, Explorer und Dialogen der App hat sich nichts geändert.

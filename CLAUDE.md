@@ -175,11 +175,13 @@ User-Auftrag 28.09.2026: ein Installer-Paket, um die App einem Freund zu geben.
   BOM und Bild.
 - Nicht signiert: SmartScreen warnt beim Empfänger. Ein Zertifikat kostet Geld — das
   entscheidet der User, nicht von selbst einbauen.
-- Geprüft wird der Installer am Fenster ohne Maus: `WM_COMMAND` mit Kennung 1 an das
-  Hauptfenster geht eine Seite weiter, `PrintWindow` macht das Bild. Die Seite für das
-  Aktualisieren erscheint, wenn `DisplayVersion` unter
-  `HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\KI-Enzyklopädie` kleiner ist
-  als die Version des Installers (zum Ansehen kurz umstellen, danach zurück).
+- Nach Änderungen am Installer (Texte, Bild, `bundle` in `tauri.conf.json`):
+  `npm run installer:beweis` (`scripts/installer-beweis.ps1`) — bedient das Fenster ohne
+  Maus (`WM_COMMAND` mit Kennung 1 geht eine Seite weiter, `PrintWindow` macht das Bild),
+  Bilder nach `.playwright-mcp/`, danach ansehen. Ohne Argument installiert der Lauf
+  nichts; `-- -Aelter` zeigt die Seite zum Aktualisieren (stellt dafür kurz
+  `DisplayVersion` unter `HKCU:\…\Uninstall\KI-Enzyklopädie` um und wieder zurück);
+  `-- -Modus installieren` läuft durch und ersetzt die installierte App.
 
 ## Fallen
 
