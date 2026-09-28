@@ -15,6 +15,7 @@
     "tauri:dev": "tauri dev",
     "tauri:build": "tauri build",
     "tauri:icon": "node scripts/gen-icon.mjs && tauri icon src-tauri/icon-src.png && node -e \"for (const d of ['src-tauri/icons/android','src-tauri/icons/ios']) require('fs').rmSync(d,{recursive:true,force:true})\"",
+    "tauri:installer-bild": "node scripts/gen-installer-bild.mjs",
     "nativ:beweis": "node scripts/nativ-beweis.mjs",
     "os:beweis": "node scripts/os-beweis.mjs"
   },

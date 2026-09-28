@@ -477,6 +477,51 @@ mod tests {
         assert_eq!(scope, vec!["$APPDATA/dokumente/**"]);
     }
 
+    /// Der Installer geht an andere Leute: deutsch, mit eigenem Bild, und die eigenen
+    /// Texte vollständig — ein fehlender Schlüssel ergibt im Fenster eine Lücke im Satz.
+    #[test]
+    fn installer_ist_deutsch_und_vollstaendig() {
+        const SCHLUESSEL: [&str; 27] = [
+            "addOrReinstall", "alreadyInstalled", "alreadyInstalledLong", "appRunning",
+            "appRunningOkKill", "chooseMaintenanceOption", "choowHowToInstall", "createDesktop",
+            "dontUninstall", "dontUninstallDowngrade", "failedToKillApp", "installingWebview2",
+            "newerVersionInstalled", "older", "olderOrUnknownVersionInstalled", "silentDowngrades",
+            "unableToUninstall", "uninstallApp", "uninstallBeforeInstalling", "unknown",
+            "webview2AbortError", "webview2DownloadError", "webview2DownloadSuccess",
+            "webview2Downloading", "webview2InstallError", "webview2InstallSuccess", "deleteAppData",
+        ];
+        let c = config();
+        let nsis = &c["bundle"]["windows"]["nsis"];
+        assert_eq!(nsis["languages"], serde_json::json!(["German"]));
+        let wurzel = Path::new(env!("CARGO_MANIFEST_DIR"));
+
+        let texte = wurzel.join(nsis["customLanguageFiles"]["German"].as_str().expect("eigene Texte gesetzt"));
+        let roh = fs::read(&texte).expect("Textdatei des Installers lesbar");
+        assert!(
+            !roh.starts_with(&[0xEF, 0xBB, 0xBF]),
+            "{} darf kein BOM tragen: der Bundler setzt selbst eines davor, makensis bricht beim zweiten ab",
+            texte.display()
+        );
+        let inhalt = String::from_utf8(roh).expect("Textdatei des Installers ist UTF-8");
+        let zeilen: Vec<&str> = inhalt.lines().filter(|z| z.starts_with("LangString ")).collect();
+        let gefunden: Vec<&str> = zeilen.iter().filter_map(|z| z.split_whitespace().nth(1)).collect();
+        for s in SCHLUESSEL {
+            assert_eq!(gefunden.iter().filter(|g| **g == s).count(), 1, "Schlüssel {s} genau einmal");
+        }
+        assert_eq!(gefunden.len(), SCHLUESSEL.len(), "kein unbekannter Schlüssel: {gefunden:?}");
+        for zeile in zeilen {
+            assert!(zeile.contains(" ${LANG_GERMAN} \""), "Sprache und Text in: {zeile}");
+            assert!(zeile.ends_with('"'), "Text endet mit Anführungszeichen: {zeile}");
+        }
+
+        // NSIS nimmt nur BMP ohne Alphakanal.
+        let bild = fs::read(wurzel.join(nsis["sidebarImage"].as_str().expect("Seitenbild gesetzt")))
+            .expect("Seitenbild lesbar");
+        assert_eq!(&bild[0..2], b"BM");
+        assert_eq!(u16::from_le_bytes([bild[28], bild[29]]), 24, "24 Bit je Pixel");
+        assert!(wurzel.join(nsis["installerIcon"].as_str().expect("Icon gesetzt")).is_file());
+    }
+
     #[test]
     fn atomares_schreiben_legt_sicherung_der_vorigen_fassung_an() {
         let dir = testordner("atomar");
