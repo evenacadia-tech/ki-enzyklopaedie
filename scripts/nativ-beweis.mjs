@@ -1,6 +1,8 @@
 /* global window, document */
 // Nativer Beweis: startet die GEBAUTE .exe mit WebView2-Debug-Port und prüft am echten
 // Fenster, was Tests im Browser nicht zeigen können:
+//   · Podcast: die Datei liegt neben der .exe, kommt über das Asset-Protokoll, spielt,
+//     springt (Teil-Antworten 206) und läuft beim Seitenwechsel weiter;
 //   · Tagebuch: Eintrag schreiben, markieren, Farbe wählen → steht in tagebuch.json;
 //     eine exportierte Datei importieren → neue Tage kommen dazu, vorhandene bleiben;
 //   · Dokumente: Dateien über das Hineinziehen-Ereignis importieren → Kopie liegt in
@@ -9,7 +11,7 @@
 //   · Sperren: ausführbare Dateien startet die App nicht, eine als .pdf benannte
 //     Webseite bekommt keine Vorschau, fremde Kennungen und Dateinamen lehnt die
 //     Rust-Seite ab.
-// Dazu Screenshots (Start, Artikel, Tagebuch, Dokumente). Alle Dateien des Nutzers im
+// Dazu Screenshots (Start, Artikel, Podcast, Tagebuch, Dokumente). Alle Dateien des Nutzers im
 // App-Datenordner werden vorher gesichert, beiseitegelegt (der Beweis läuft mit leerem
 // Bestand, in den Bildern steht nichts vom Nutzer) und danach byte-genau zurückgespielt; was der
 // Beweis in dokumente/ anlegt, räumt er wieder weg.
@@ -293,6 +295,66 @@ try {
   await geheZu('#/artikel/strategie-begriff');
   await page.waitForSelector('article.artikel');
   await page.screenshot({ path: join(ausgabe, 'nativ-artikel-strategie.png') });
+
+  // 3a. Podcast: die Datei liegt als Ressource neben der .exe und kommt über das
+  //     Asset-Protokoll; sie spielt, springt (Range-Anfragen) und läuft beim Wechsel
+  //     der Seite weiter. Stelle und Tempo merkt die App im localStorage des ECHTEN
+  //     WebView2-Profils — der alte Wert wird danach zurückgeschrieben.
+  const PODCAST = 'bussgeld';
+  const PODCAST_KEY = 'ki-enzyklopaedie.podcast.v1';
+  const neben = join(exe, '..', 'podcasts', `${PODCAST}.opus`);
+  pruefe(existsSync(neben), `Der Podcast liegt nicht neben der .exe: ${neben}`);
+  const alterStand = await page.evaluate((k) => window.localStorage.getItem(k), PODCAST_KEY);
+  const zeitInLeiste = () => page.evaluate(() => document.querySelector('.zeitleiste__zeit')?.textContent ?? '');
+  const sekunden = (t) => t.split(':').reduce((s, x) => s * 60 + Number(x), 0);
+  try {
+    await geheZu(`#/artikel/${PODCAST}`);
+    await page.waitForSelector('.podcastknopf');
+    await page.click('.podcastknopf');
+    await page.waitForSelector('.podcastleiste');
+    await page
+      .waitForFunction(
+        () => (document.querySelector('.zeitleiste__zeit')?.textContent ?? '0:00').split(':').reduce((s, x) => s * 60 + Number(x), 0) >= 2,
+        { timeout: 15000 },
+      )
+      .catch(() => null);
+    const anfang = await zeitInLeiste();
+    pruefe(sekunden(anfang) >= 1, `Der Podcast läuft nicht (Zeit in der Leiste: ${anfang}).`);
+    // Springen über den Regler auf 80 %.
+    const regler = await (await page.$('.zeitleiste__regler')).boundingBox();
+    await page.mouse.click(regler.x + regler.width * 0.8, regler.y + regler.height / 2);
+    await pause(1500);
+    const gesprungen = await zeitInLeiste();
+    await page.screenshot({ path: join(ausgabe, 'nativ-artikel-podcast.png') });
+    await geheZu('#/artikel/rag');
+    await pause(1500);
+    const weiter = await zeitInLeiste();
+    bericht.podcast = {
+      neben,
+      anfang,
+      gesprungen,
+      nachSeitenwechsel: weiter,
+      fehler: await page.evaluate(() => document.querySelector('.podcastleiste__fehler')?.textContent ?? null),
+      ausgeliefert: ausgeliefert.filter((a) => a.url.includes('podcasts')).slice(0, 5),
+    };
+    pruefe(bericht.podcast.fehler === null, `Die Leiste meldet: ${bericht.podcast.fehler}`);
+    pruefe(sekunden(gesprungen) > 1100, `Der Sprung auf 80 % kam nicht an (${gesprungen}).`);
+    pruefe(sekunden(weiter) > sekunden(gesprungen), `Nach dem Seitenwechsel läuft der Podcast nicht weiter (${gesprungen} → ${weiter}).`);
+    pruefe(
+      bericht.podcast.ausgeliefert.length > 0 &&
+        bericht.podcast.ausgeliefert.every((a) => /^http:\/\/asset\.localhost\//.test(a.url) && [200, 206].includes(a.status)),
+      'Der Podcast kam nicht über das Asset-Protokoll.',
+    );
+    pruefe(bericht.podcast.ausgeliefert.some((a) => a.status === 206), 'Keine Teil-Antwort (206) — Springen ginge nicht.');
+    await page.click('.podcastleiste__zu');
+    await page.waitForFunction(() => !document.querySelector('.podcastleiste'));
+  } finally {
+    await page.evaluate(
+      (k, alt) => (alt === null ? window.localStorage.removeItem(k) : window.localStorage.setItem(k, alt)),
+      PODCAST_KEY,
+      alterStand,
+    );
+  }
 
   // 4. Tagebuch: Eintrag schreiben, markieren, Farbe wählen, Sicherung abwarten.
   await geheZu(`#/tagebuch/${TAG}`);

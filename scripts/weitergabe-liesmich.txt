@@ -2,8 +2,9 @@ KI-Enzyklopädie {{version}}
 =====================
 
 Eine Lese-App für Windows: über hundert quellenbelegte Artikel zu KI-Beratung,
-EU AI Act, Governance, KI-Ethik, Strategie und Psychologie. Dazu ein persönliches
-Tagebuch mit Kalender und eine Ablage für Zertifikate und wichtige Dokumente.
+EU AI Act, Governance, KI-Ethik, Strategie und Psychologie, zu den ersten davon
+ein Podcast (Knopf neben dem Titel). Dazu ein persönliches Tagebuch mit Kalender
+und eine Ablage für Zertifikate und wichtige Dokumente.
 
 Kein Konto, keine Anmeldung. Die App selbst schickt nichts ins Netz; nur die
 Quellen-Links unter den Artikeln öffnen sich auf Klick im Browser.

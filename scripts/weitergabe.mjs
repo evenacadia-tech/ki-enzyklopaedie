@@ -7,7 +7,8 @@
 // Ohne Argument landet das Paket in `weitergabe/` (nicht eingecheckt).
 //
 // Im Paket steckt nichts vom Nutzer: Tagebuch und Dokumente liegen im App-Datenordner,
-// der Installer enthält nur die .exe. Das Skript prüft vor dem Packen, dass der Build
+// der Installer enthält nur die .exe und die Podcasts (Ressourcen aus `podcasts/`, sie
+// gehören zum Inhalt der App wie die Artikel). Das Skript prüft vor dem Packen, dass der Build
 // jünger ist als alle Quellen — `tauri build` endet auch dann mit Exit-Code 0, wenn der
 // Linker die .exe nicht schreiben konnte und die alte liegen blieb.
 import { spawnSync } from 'node:child_process';
@@ -23,7 +24,7 @@ const ziel = resolve(process.argv[2] ?? 'weitergabe');
 const DATEI = `KI-Enzyklopaedie-Setup-${version}.exe`;
 const ARCHIV = `KI-Enzyklopaedie-${version}.zip`;
 // Alles, was in die .exe oder den Installer eingeht.
-const QUELLEN = ['src', 'public', 'index.html', 'package-lock.json', 'src-tauri/src', 'src-tauri/capabilities', 'src-tauri/icons', 'src-tauri/installer', 'src-tauri/tauri.conf.json', 'src-tauri/Cargo.toml', 'src-tauri/build.rs'];
+const QUELLEN = ['src', 'public', 'podcasts', 'index.html', 'package-lock.json', 'src-tauri/src', 'src-tauri/capabilities', 'src-tauri/icons', 'src-tauri/installer', 'src-tauri/tauri.conf.json', 'src-tauri/Cargo.toml', 'src-tauri/build.rs'];
 
 function abbruch(text) {
   console.error(text);
