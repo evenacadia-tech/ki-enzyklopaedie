@@ -169,7 +169,7 @@ und einer `LIESMICH.txt` (Vorlage: `scripts/weitergabe-liesmich.txt`). Dateiname
 Umlaut, weil Umlaute in ZIP-Archiven und Anhängen gern kaputtgehen.
 
 - **Nichts Eigenes im Paket.** Der Installer enthält die `.exe`, die Podcasts (sie gehören
-  zum Inhalt wie die Artikel; je Folge 4–7 MB, bei sieben Folgen 41 MB Installer) und das
+  zum Inhalt wie die Artikel; je Folge 3–7 MB, mit allen 111 Folgen etwa 550 MB) und das
   Hilfsprogramm von Microsoft, das WebView2 nachinstalliert, falls es fehlt. Tagebuch und
   Dokumente liegen im App-Datenordner und gehen nicht mit; wer installiert, beginnt leer.
 - **Der Installer ist deutsch** und trägt Icon und Seitenbild der App. Die eigenen Texte

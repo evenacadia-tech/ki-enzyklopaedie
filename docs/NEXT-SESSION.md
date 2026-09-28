@@ -1,10 +1,10 @@
 # Übergabe an die nächste Sitzung
 
-Stand: 2026-09-28, Version 0.4.0. Die drei Wünsche vom 27.09.2026 sind gebaut und am
+Stand: 2026-09-28, Version 0.4.1. Die drei Wünsche vom 27.09.2026 sind gebaut und am
 echten Fenster geprüft; am 28.09.2026 kamen das Paket zum Weitergeben, der Import ins
-Tagebuch, die Quellen für Podcasts und die ersten sieben Podcasts in der App dazu
-(Abschnitte unten). **Offener Auftrag:** weitere Folgen, die der User nach und nach
-liefert, einbinden — Ablauf unter „Podcasts in der App“.
+Tagebuch, die Quellen für Podcasts und die ersten elf Podcasts in der App dazu
+(Abschnitte unten). **Offener Auftrag:** weitere Folgen (ab 012), die der User nach und
+nach liefert, einbinden — Ablauf unter „Podcasts in der App“.
 
 ## Podcasts in der App (28.09.2026, Version 0.4.0)
 
@@ -17,6 +17,12 @@ einbauen, „neben die Überschrift kommt ein stilistisch passender Playbutton�
   Restzeit, Tempo 1×–2×, Schließen — sie bleibt beim Seitenwechsel. Stelle und Tempo lokal.
 - **Zuordnung** (Dateiname ↔ Titel geprüft): 1 → `timeline`, 2 → `bussgeld`, 3 → `dsfa`,
   4 → `ai-act`, 5 → `risikoklassen`, 6 → `gpai`, 7 → `hochrisiko`.
+- **Zweite Lieferung (0.4.1, gleicher Tag):** 8 → `ki-kompetenz`, 9 → `tdm-urheberrecht`,
+  10 → `transparenz`, 11 → `verbote` — damit ist „EU AI Act & Recht“ vollständig. 130,7 MB →
+  16,6 MB, Lautstärke 0,1–0,2 dB unter dem Original. Geprüft: 200 Vitest, 15 cargo, Lint,
+  Build, `nativ:beweis` (`.playwright-mcp/beweis-0.4.1/`), installiert, `verbote` in der
+  installierten App abgespielt, Datenordner byte-gleich, App wieder gestartet; Paket 0.4.1
+  (58 MB) auf dem Desktop statt 0.4.0.
 - **Kompression:** Opus mono 32 kbit/s, 297,6 MB → 37,8 MB (je Folge 4–7 MB), Lautstärke
   0,1–0,2 dB unter dem Original. Die Originale liegen unberührt in `Downloads`; die App braucht
   sie nicht mehr.
@@ -24,8 +30,8 @@ einbauen, „neben die Überschrift kommt ein stilistisch passender Playbutton�
   App schließen, `npm run tauri:build`, `npm run nativ:beweis -- .playwright-mcp/<ordner>`,
   Installer `/S`, App starten, `npm run weitergabe`, Kopie auf dem Desktop ersetzen.
 - **Entscheidungen beim Bauen:** Podcasts gehen ins Paket für den Freund (die offene Frage von
-  vorhin — sie gehören zum Inhalt; Installer 41 MB statt 3,5 MB, bei 111 Folgen etwa 600 MB).
-  Kein Git LFS (Dateien 4–7 MB, GitHub empfiehlt Repos unter 1 GB). Keine Anzeige im Register,
+  vorhin — sie gehören zum Inhalt; Installer 41 MB statt 3,5 MB, bei 111 Folgen etwa 550 MB).
+  Kein Git LFS (Dateien 3–7 MB, GitHub empfiehlt Repos unter 1 GB). Keine Anzeige im Register,
   welche Artikel einen Podcast haben — nicht beauftragt, und bei 111 von 111 wäre sie Rauschen.
 - **Geprüft am Endstand:** 200 Tests (Vitest), 15 Tests (cargo), Lint, Build; im Browser bei
   1280 und 960 px angesehen (Knopf ein- und zweizeilig, Leiste, Ziehen am Regler mit Loslassen
