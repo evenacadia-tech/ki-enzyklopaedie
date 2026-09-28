@@ -1,4 +1,4 @@
-import { useRef, useState, type CSSProperties } from 'react';
+import { useCallback, useEffect, useRef, useState, type CSSProperties } from 'react';
 import { enzyklopaedie } from '../inhalt';
 import { hrefArtikel } from '../router';
 import { minuten, podcastZu, uhr } from '../podcast/katalog';
@@ -84,22 +84,34 @@ export function PodcastKnopf({ artikelId }: { artikelId: string }) {
   );
 }
 
-/** Regler für die Stelle: zeigt beim Ziehen die Zielzeit und springt erst beim Loslassen. */
+/**
+ * Regler für die Stelle: zeigt beim Ziehen die Zielzeit (Ereignis `input`) und springt
+ * erst, wenn der Browser den Wert festschreibt — das native `change` kommt beim Loslassen
+ * der Maus (auch außerhalb des Reglers), bei jedem Tastendruck und beim Klick auf die Spur.
+ * Reacts `onChange` hört dagegen schon auf `input`.
+ */
 function Zeitleiste({ zeit, dauer }: { zeit: number; dauer: number }) {
   const [gezogen, setGezogen] = useState<number | null>(null);
   const ziel = useRef<number | null>(null);
+  const regler = useRef<HTMLInputElement>(null);
   const wert = gezogen ?? zeit;
   const anteil = dauer > 0 ? Math.min(1, Math.max(0, wert / dauer)) : 0;
-  const uebernehmen = () => {
+  const uebernehmen = useCallback(() => {
     if (ziel.current === null) return;
     springe(ziel.current);
     ziel.current = null;
     setGezogen(null);
-  };
+  }, []);
+  useEffect(() => {
+    const el = regler.current;
+    el?.addEventListener('change', uebernehmen);
+    return () => el?.removeEventListener('change', uebernehmen);
+  }, [uebernehmen]);
   return (
     <div className="zeitleiste">
       <span className="zeitleiste__zeit mono">{uhr(wert)}</span>
       <input
+        ref={regler}
         type="range"
         className="zeitleiste__regler"
         min={0}
@@ -113,8 +125,6 @@ function Zeitleiste({ zeit, dauer }: { zeit: number; dauer: number }) {
           ziel.current = Number(e.currentTarget.value);
           setGezogen(ziel.current);
         }}
-        onPointerUp={uebernehmen}
-        onKeyUp={uebernehmen}
         onBlur={uebernehmen}
       />
       <span className="zeitleiste__zeit zeitleiste__zeit--rest mono" title="Restzeit">
@@ -179,7 +189,17 @@ export function PodcastLeiste({ aktivId }: { aktivId: string | null }) {
           >
             {tempoText(s.tempo)}
           </button>
-          <button type="button" className="podcastleiste__zu" onClick={schliesse} aria-label="Podcast schließen" title="Schließen">
+          <button
+            type="button"
+            className="podcastleiste__zu"
+            onClick={() => {
+              schliesse();
+              // Der Knopf verschwindet mit der Leiste — die Tastatur macht auf der Bühne weiter.
+              document.querySelector<HTMLElement>('.buehne')?.focus({ preventScroll: true });
+            }}
+            aria-label="Podcast schließen"
+            title="Schließen"
+          >
             <Kreuz />
           </button>
         </div>

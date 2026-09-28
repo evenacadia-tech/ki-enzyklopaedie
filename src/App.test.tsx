@@ -581,6 +581,7 @@ describe('Podcast', () => {
 
     fireEvent.click(weiter.getByRole('button', { name: 'Podcast schließen' }));
     expect(screen.queryByRole('region', { name: 'Podcast' })).not.toBeInTheDocument();
+    expect(document.activeElement).toBe(screen.getByRole('main'));
   });
 
   it('springt mit dem Regler erst beim Loslassen, spult und ändert das Tempo', async () => {
@@ -592,10 +593,11 @@ describe('Podcast', () => {
     const regler = leiste.getByRole('slider', { name: 'Stelle im Podcast' });
     const audio = _audioFuerTests()!;
 
-    fireEvent.change(regler, { target: { value: '600' } });
+    // Ziehen (input) zeigt nur die Zielzeit; gesprungen wird beim Festschreiben (change).
+    fireEvent.input(regler, { target: { value: '600' } });
     expect(regler).toHaveAttribute('aria-valuetext', '10:00 von 19:54');
     expect(audio.currentTime).toBe(0);
-    fireEvent.pointerUp(regler);
+    fireEvent.change(regler);
     expect(audio.currentTime).toBe(600);
 
     fireEvent.click(leiste.getByRole('button', { name: '15 Sekunden zurück' }));
