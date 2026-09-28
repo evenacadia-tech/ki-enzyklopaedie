@@ -1,6 +1,6 @@
 [package]
 name = "ki-enzyklopaedie"
-version = "0.1.0"
+version = "0.2.0"
 description = "KI-Enzyklopädie — reine Lese-App als native Desktop-Anwendung"
 authors = ["evenacadia"]
 edition = "2021"
