@@ -23,7 +23,8 @@ importieren); (3) Anhänge je Tagebuchtag, die im Dokumente-Bereich gesammelt er
 Produkt-Antworten dazu (27.09.2026): Farben ohne Legende („nur Farbe“); Entfernen löscht
 endgültig („entfernt ist entfernt“, Rückfrage vor dem Löschen bleibt); kein Ablaufdatum
 für Zertifikate; Vorschau von PDF und Bildern in der App: ja. Offen ohne Antwort:
-Artikel-Verknüpfung aus Tagebuchtagen (niedrige Priorität).
+Artikel-Verknüpfung aus Tagebuchtagen (niedrige Priorität). Seit 28.09.2026 geht die App
+auch an andere (Abschnitt „Weitergabe“).
 
 **Design (User-Entscheid 26.09.2026):** Farbwelt = Windows-Terminal-Schema
 „Nakama Champagne Night“ (das Dirigenten-Terminal, NICHT das Nakama-Plugin-Design).
@@ -41,7 +42,9 @@ npm test && npm run lint && npm run build
 Sichtbare Änderungen zusätzlich rendern und ansehen (`npm run preview` +
 Playwright-Screenshot oder `npm run tauri:dev`); grüne Tests sagen nichts über Lesbarkeit.
 Nach Änderungen an `src-tauri/` zusätzlich `cargo test` (in `src-tauri/`), danach
-`npm run tauri:build` und `npm run nativ:beweis` (gebaute .exe, echtes Fenster). Für
+`npm run tauri:build` und `npm run nativ:beweis` (gebaute .exe, echtes Fenster;
+`npm run nativ:beweis -- <ordner>` lenkt die Bilder um, sonst überschreibt der Lauf
+`docs/bilder/`). Für
 alles, was Maus, Explorer oder Systemdialoge braucht (Hineinziehen, Öffnen, Rückfrage):
 `npm run os:beweis` — bewegt die Maus und öffnet Fenster, also nur laufen lassen, wenn
 niemand am Rechner arbeitet; `SKALIERUNG=1.5` davor rechnet wie ein skalierter Bildschirm.
@@ -149,7 +152,44 @@ Zwei Quellen, ein Load-Guard (`src/inhalt/index.ts` → `vereinige` in
 - Browser/Preview: nur das Verzeichnis (localStorage `ki-enzyklopaedie.dokumente.v1`),
   keine Dateien — Tests nutzen `src/test/fake-dokumente.ts`.
 
+## Weitergabe
+
+User-Auftrag 28.09.2026: ein Installer-Paket, um die App einem Freund zu geben.
+
+- `npm run tauri:build && npm run weitergabe` → `weitergabe/` (nicht eingecheckt):
+  `KI-Enzyklopaedie-<version>.zip` mit `KI-Enzyklopaedie-Setup-<version>.exe` und
+  `LIESMICH.txt` (Vorlage `scripts/weitergabe-liesmich.txt`, Platzhalter `{{version}}`,
+  `{{datei}}`, `{{sha256}}`; geschrieben mit BOM und CRLF). Namen ohne Umlaut. Das Skript
+  bricht ab, wenn `.exe` oder Installer älter sind als die Quellen.
+- Im Paket steckt nichts vom Nutzer: der Installer enthält nur die `.exe` und den
+  WebView2-Bootstrapper von Microsoft (`webviewInstallMode: embedBootstrapper`). Die
+  `.exe` braucht keine VC++-Laufzeit (statisch gelinkt, Standard von `tauri-build`).
+- Installer deutsch (`bundle.windows.nsis.languages: ["German"]`), mit App-Icon und
+  eigenem Seitenbild (`src-tauri/installer/seitenbild.bmp` aus
+  `npm run tauri:installer-bild`, 328×628 = doppelte Auflösung, 24-Bit-BMP).
+- Eigene Texte in `src-tauri/installer/German.nsh` (`customLanguageFiles`): die deutsche
+  Fassung von Tauri hat die Schlüssel `older`/`unknown` mitübersetzt (`älter`,
+  `unbekannt`), beim Aktualisieren fehlte dadurch ein Wort im Satz. Die Datei muss UTF-8
+  OHNE BOM sein — der Bundler setzt beim Kopieren selbst eines davor, mit zweien bricht
+  makensis ab. Der Rust-Test `installer_ist_deutsch_und_vollstaendig` prüft Schlüssel,
+  BOM und Bild.
+- Nicht signiert: SmartScreen warnt beim Empfänger. Ein Zertifikat kostet Geld — das
+  entscheidet der User, nicht von selbst einbauen.
+- Geprüft wird der Installer am Fenster ohne Maus: `WM_COMMAND` mit Kennung 1 an das
+  Hauptfenster geht eine Seite weiter, `PrintWindow` macht das Bild. Die Seite für das
+  Aktualisieren erscheint, wenn `DisplayVersion` unter
+  `HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\KI-Enzyklopädie` kleiner ist
+  als die Version des Installers (zum Ansehen kurz umstellen, danach zurück).
+
 ## Fallen
+
+- Der Bundler schreibt die `.exe` in `target/release` NACH dem Packen noch einmal (er
+  nimmt die Kennzeichnung der Bundle-Art wieder heraus): sie ist stets etwas jünger als
+  der Installer und nicht byte-gleich mit der installierten. Die Warnung
+  „STATIC_VCRUNTIME is deprecated“ bei `tauri build` kommt aus der Tauri-CLI selbst, nicht
+  aus diesem Repo.
+- `cargo fmt` NICHT über `src-tauri/src/lib.rs` laufen lassen: die Datei ist von Hand
+  gesetzt, rustfmt bricht fast zweihundert Zeilen um.
 
 - Vor `tauri build`/`cargo build` prüfen, dass keine Instanz der App läuft
   (`Get-Process ki-enzyklopaedie`): eine laufende .exe sperrt

@@ -1,0 +1,74 @@
+KI-Enzyklopädie {{version}}
+=====================
+
+Eine Lese-App für Windows: über hundert quellenbelegte Artikel zu KI-Beratung,
+EU AI Act, Governance, KI-Ethik, Strategie und Psychologie. Dazu ein persönliches
+Tagebuch mit Kalender und eine Ablage für Zertifikate und wichtige Dokumente.
+
+Kein Konto, keine Anmeldung. Die App selbst schickt nichts ins Netz; nur die
+Quellen-Links unter den Artikeln öffnen sich auf Klick im Browser.
+
+
+Installieren
+------------
+
+1. Die Datei "{{datei}}" doppelt anklicken.
+
+2. Windows zeigt wahrscheinlich ein blaues Fenster: "Der Computer wurde durch
+   Windows geschützt". Das erscheint bei jeder App, die nicht kostenpflichtig
+   signiert ist. Dort auf "Weitere Informationen" klicken, dann auf
+   "Trotzdem ausführen".
+
+3. Dem Assistenten folgen. Administratorrechte sind nicht nötig, die App wird
+   nur für das eigene Benutzerkonto eingerichtet.
+
+4. Starten: Startmenü oder Verknüpfung auf dem Desktop, Name "KI-Enzyklopädie".
+
+
+Voraussetzungen
+---------------
+
+Windows 10 oder Windows 11 (64 Bit).
+
+Die App braucht "Microsoft Edge WebView2". Auf Windows 11 und auf einem
+aktuellen Windows 10 ist es bereits vorhanden. Fehlt es, holt der Installer es
+bei Microsoft nach - nur dafür braucht er einmal eine Internetverbindung.
+
+
+Deine Daten
+-----------
+
+Du beginnst mit einem leeren Tagebuch und einer leeren Ablage. Im Paket steckt
+nichts von der Person, die dir die App gegeben hat.
+
+Alles, was du schreibst oder ablegst, liegt nur auf deinem Rechner, in diesem
+Ordner (so in die Adresszeile des Explorers eingeben):
+
+   %APPDATA%\de.evenacadia.ki-enzyklopaedie
+
+Datensicherung: diesen Ordner kopieren.
+
+
+Neue Fassung
+------------
+
+Einfach den neuen Installer ausführen. Er schlägt vor, die alte Fassung vorher
+zu entfernen - das ist in Ordnung. Tagebuch und Dokumente bleiben erhalten,
+solange das Kästchen "Auch Tagebuch, Dokumente und Einstellungen löschen"
+leer bleibt.
+
+
+Entfernen
+---------
+
+Windows-Einstellungen, dann "Apps", "Installierte Apps", "KI-Enzyklopädie",
+"Deinstallieren". Tagebuch und Dokumente bleiben dabei liegen - außer man
+kreuzt im Fenster der Deinstallation "Auch Tagebuch, Dokumente und
+Einstellungen löschen" an.
+
+
+Prüfsumme
+---------
+
+SHA-256 von "{{datei}}":
+{{sha256}}

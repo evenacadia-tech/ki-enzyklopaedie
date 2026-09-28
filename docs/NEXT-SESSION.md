@@ -1,7 +1,26 @@
 # Übergabe an die nächste Sitzung
 
-Stand: 2026-09-27 (Mittag, Desktop-PC). Diese Sitzung hat die drei Wünsche vom 27.09.2026
-gebaut und am echten Fenster geprüft. Es gibt keinen offenen Auftrag.
+Stand: 2026-09-28. Die drei Wünsche vom 27.09.2026 sind gebaut und am echten Fenster
+geprüft; am 28.09.2026 kam das Paket zum Weitergeben dazu (Abschnitt unten). Es gibt
+keinen offenen Auftrag.
+
+## Weitergabe (28.09.2026)
+
+Wunsch des Users: ein Installer-Paket, um die App einem Freund zu geben.
+
+- `npm run tauri:build && npm run weitergabe` legt `weitergabe/KI-Enzyklopaedie-0.1.0.zip`
+  an (Installer + `LIESMICH.txt`). Eine Kopie liegt auf dem Desktop des Users.
+- Der Installer ist jetzt deutsch, trägt Icon und Seitenbild der App und bringt das
+  Hilfsprogramm für WebView2 mit. Eigene deutsche Texte, weil die von Tauri gelieferten
+  beim Aktualisieren einen Satz mit Lücke zeigten.
+- Geprüft: 125 Tests (Vitest), 13 Tests (cargo), Lint, Build, `nativ:beweis`; Installer am
+  echten Fenster Seite für Seite durchlaufen (Bilder angesehen), auch die Seite, die beim
+  Aktualisieren über eine ältere Fassung erscheint; danach lief die installierte App,
+  Tagebuch und Verknüpfungen unverändert.
+- NICHT geprüft: Installation auf einem fremden Rechner ohne WebView2 und die Warnung von
+  SmartScreen (erscheint nur bei Dateien aus dem Netz). `os:beweis` lief nicht — der User
+  saß am Rechner, und an Maus, Explorer und Dialogen der App hat sich nichts geändert.
+- Offen für den User: Codesignatur (kostet Geld) würde die SmartScreen-Warnung abstellen.
 
 ## Was gebaut ist
 

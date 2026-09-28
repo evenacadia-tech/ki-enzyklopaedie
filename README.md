@@ -131,6 +131,8 @@ npm run tauri:dev    # natives Fenster gegen den Dev-Server
 npm run tauri:build  # Windows-Installer (NSIS) + .exe unter src-tauri/target/release/
 npm run nativ:beweis # startet die gebaute .exe, prüft Tagebuch, Dokumente, Vorschau und Sperren am echten Fenster, Screenshots nach docs/bilder/
 npm run os:beweis    # zieht mit echter Maus Dateien aus dem Explorer in die App, prüft Öffnen, „Im Ordner zeigen“ und die Rückfrage vor dem Entfernen
+npm run weitergabe   # nach tauri:build: Paket zum Weitergeben (Installer + LIESMICH.txt, beides als ZIP) nach weitergabe/
+npm run tauri:installer-bild  # Seitenbild des Installers neu erzeugen (src-tauri/installer/seitenbild.bmp)
 ```
 
 Voraussetzungen für die native App: Rust-Toolchain (≥ 1.77) und die Tauri-2-
@@ -145,6 +147,31 @@ Minute lang die Maus und öffnet Fenster (Explorer, Bildbetrachter, Rückfrage) 
 starten, wenn niemand am Rechner arbeitet. Fenster, die vorher offen waren, bleiben
 unberührt; der App-Datenordner wird gesichert und zurückgespielt. Braucht PowerShell 7
 (`pwsh`). `SKALIERUNG=1.5 npm run os:beweis` rechnet wie ein auf 150 % skalierter Bildschirm.
+
+## Weitergeben
+
+```bash
+npm run tauri:build && npm run weitergabe
+```
+
+legt in `weitergabe/` (nicht eingecheckt) ab, was man jemandem geben kann:
+`KI-Enzyklopaedie-<version>.zip` mit dem Installer `KI-Enzyklopaedie-Setup-<version>.exe`
+und einer `LIESMICH.txt` (Vorlage: `scripts/weitergabe-liesmich.txt`). Dateinamen ohne
+Umlaut, weil Umlaute in ZIP-Archiven und Anhängen gern kaputtgehen.
+
+- **Nichts Eigenes im Paket.** Der Installer enthält die `.exe` und das Hilfsprogramm von
+  Microsoft, das WebView2 nachinstalliert, falls es fehlt. Tagebuch und Dokumente liegen im
+  App-Datenordner und gehen nicht mit; wer installiert, beginnt leer.
+- **Der Installer ist deutsch** und trägt Icon und Seitenbild der App. Die eigenen Texte
+  stehen in `src-tauri/installer/German.nsh`.
+- **Nicht signiert.** Windows SmartScreen warnt beim ersten Start („Der Computer wurde durch
+  Windows geschützt“); weiter geht es über „Weitere Informationen“ → „Trotzdem ausführen“.
+  Das steht auch in der LIESMICH. Abstellen ließe sich die Warnung nur mit einem gekauften
+  Zertifikat zur Codesignatur.
+- **Voraussetzung beim Empfänger:** Windows 10 oder 11, 64 Bit. Keine Administratorrechte,
+  installiert wird je Benutzer nach `%LOCALAPPDATA%\KI-Enzyklopädie`.
+- **Versand:** Mail-Dienste lehnen Programme als Anhang meist ab, auch im ZIP. Verlässlich
+  sind ein USB-Stick oder ein Freigabe-Link (Cloud-Speicher, WeTransfer).
 
 ## Inhalt aktualisieren
 
@@ -180,7 +207,7 @@ src/komponenten/ Kopf (Bereichs-Umschalter) · Seitenleiste · ArtikelAnsicht (m
 src/router.ts    Hash-Router (#/, #/artikel/<id>, #/tagebuch[/<datum>], #/dokumente[/<kennung>])
 src/einstellungen.ts  Schriftgröße + Register-Modus (localStorage)
 src/lesefortschritt.ts  gelesene Artikel (localStorage)
-src-tauri/       dünne Tauri-2-Hülle (ein Fenster, Opener-Plugin für Quellen-Links und Dokumente, Dialog-Plugin für Export, Dateiauswahl und Rückfrage, Window-State-Plugin, Asset-Protokoll für die Vorschau, eigene Commands für die JSON-Dateien und die Dokumente)
-scripts/         export-aus-akademie.mts · gen-icon.mjs · nativ-beweis.mjs · os-beweis.mjs + os-helfer.ps1
+src-tauri/       dünne Tauri-2-Hülle (ein Fenster, Opener-Plugin für Quellen-Links und Dokumente, Dialog-Plugin für Export, Dateiauswahl und Rückfrage, Window-State-Plugin, Asset-Protokoll für die Vorschau, eigene Commands für die JSON-Dateien und die Dokumente) · installer/ (deutsche Texte und Seitenbild des Installers)
+scripts/         export-aus-akademie.mts · gen-icon.mjs · gen-installer-bild.mjs · nativ-beweis.mjs · os-beweis.mjs + os-helfer.ps1 · weitergabe.mjs + weitergabe-liesmich.txt
 docs/            NEXT-SESSION.md (Übergabe) · bilder/ (Screenshots)
 ```
