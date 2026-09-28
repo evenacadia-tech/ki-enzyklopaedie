@@ -7,9 +7,9 @@ Dokumente, Anhänge je Tagebuchtag). Kein Quiz, kein RAG, kein Konto.
 User-Entscheide 26.09.2026: „reine enzyklopädie app, kein RAG oder sonstige unnötige
 features“; später am selben Tag ergänzt um (1) mehr Wissensinhalt zum Thema Strategie
 und (2) eine Tagebuch-Funktion mit Kalenderübersicht, dauerhaft gespeichert, Tage für
-besondere Ereignisse markierbar. Persistenz gibt es genau fünffach: drei
-localStorage-Stände (Schrift, Register, gelesene Artikel — Letzteres seit 27.09.2026 als
-Lesezeichen für die Lesestrecken), das Tagebuch und die Dokumente (Ordner + Verzeichnis). Ausbau 27.09.2026 (User: „ja leg
+besondere Ereignisse markierbar. Persistenz gibt es genau sechsfach: vier
+localStorage-Stände (Schrift, Register, gelesene Artikel — seit 27.09.2026 als
+Lesezeichen für die Lesestrecken —, Podcast-Stelle und Tempo seit 28.09.2026), das Tagebuch und die Dokumente (Ordner + Verzeichnis). Ausbau 27.09.2026 (User: „ja leg
 los“ auf die Vorschlagsliste): Tagebuch-Suche, offene Fragen (Zeilen mit „?“), Rückblick,
 Jahresübersicht, Kalenderwochen, nächstes Ereignis, Markdown-Export, Sicherungskopie,
 Lesestrecke Vor/Zurück, Lesefortschritt, Scrollposition bei Zurück, Fensterlage merken.
@@ -109,7 +109,20 @@ Zwei Quellen plus die Vertiefungen, ein Load-Guard (`src/inhalt/index.ts` →
   siehe „Inhalt“). Ablauf für den User, NotebookLM-Grenzen und Anpassen-Text: `docs/podcasts.md`.
 - Der User übergibt Audio mit der Nummer aus `Übersicht.md`; die Nummer verschiebt sich, wenn
   Artikel dazukommen — sofort auf die Artikel-ID abbilden, an der das Audio dauerhaft hängt.
-  Einbindung in die App: noch nicht gebaut.
+- Einbindung (User 28.09.2026: Play-Knopf „stilistisch passend“ neben der Überschrift, Dateien
+  komprimieren; gebaut in 0.4.0): `npm run podcast:audio -- <dateien>` (`scripts/podcast-audio.mts`)
+  → `podcasts/<artikel-id>.opus` (Opus mono 32 kbit/s, `ffmpeg-static`) + Eintrag in
+  `src/podcast/audio.json` (GENERIERT, nicht von Hand). Danach `npm test` (prüft jede Datei gegen
+  den Eintrag), bauen, installieren, Paket für den Freund neu. Einzelheiten: `docs/podcasts.md`.
+- `podcasts/` NIE nach `public/` legen: das ginge über `dist/` in die .exe. Die App bekommt die
+  Dateien als Tauri-Ressourcen neben die .exe (`bundle.resources`), abgespielt über das
+  Asset-Protokoll (Scope `$RESOURCE/podcasts/**`, CSP `media-src`); im Browser liefert sie das
+  Vite-Plugin `podcasts` in `vite.config.ts` (sirv, mit Range).
+- Abspieler: EIN Audio-Element außerhalb von React (`src/podcast/abspieler.ts`), damit der
+  Podcast beim Seitenwechsel weiterläuft; Leiste unter der Bühne (`.spalte` in `App.tsx`), Knopf
+  im Textfluss hinter dem letzten Wort des Titels (`.artikel__titelzeile--podcast` — als
+  Flex-Zeile stand er bei umbrochenen Titeln weit rechts). Stelle je Artikel und Tempo:
+  localStorage `ki-enzyklopaedie.podcast.v1`.
 
 ## Tagebuch
 
@@ -294,6 +307,17 @@ User-Auftrag 28.09.2026: ein Installer-Paket, um die App einem Freund zu geben.
   `$x` und `$X`, `$bedingung` und `$Bedingung` sind dieselbe Variable (auch über
   Funktionsgrenzen, dynamischer Gültigkeitsbereich). Typografische Anführungszeichen
   („ “) beenden in PowerShell eine Zeichenkette.
+- jsdom spielt kein Audio: `HTMLMediaElement.prototype.play/pause/load` sind „not
+  implemented“. Tests ersetzen sie per `vi.spyOn` und melden die Ereignisse selbst
+  (`play`, `pause`, `timeupdate` mit gesetztem `currentTime`, `loadedmetadata`, `error`);
+  `_abspielerZuruecksetzen()` steht in `frisch()` — sonst bleibt die Leiste in den nächsten Test.
+- `nativ:beweis` spielt einige Sekunden eines Podcasts HÖRBAR über die Lautsprecher ab. Den
+  localStorage-Eintrag `ki-enzyklopaedie.podcast.v1` des echten WebView2-Profils schreibt der
+  Lauf danach auf den alten Wert zurück.
+- `ffmpeg-static` lädt ffmpeg in einem Install-Skript. npm 11.17 warnt bei Install-Skripten,
+  die nicht in `allowScripts` (package.json) freigegeben sind (ausgeführt hat es sie trotzdem);
+  `ffmpeg-static` und `esbuild` stehen dort mit Version. Nach einem Update des Pakets
+  `npm approve-scripts <paket>` erneut ausführen.
 - Das Playwright-Plugin schreibt nur unterhalb des Projektordners; Arbeitsbilder nach
   `.playwright-mcp/` (ignoriert), Bilder für die README nach `docs/bilder/`.
 - `vite preview` und `page.goto` mit bloß geändertem Hash laden die Seite NICHT neu —

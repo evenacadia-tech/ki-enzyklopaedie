@@ -1,11 +1,45 @@
 # Übergabe an die nächste Sitzung
 
-Stand: 2026-09-28, Version 0.3.0. Die drei Wünsche vom 27.09.2026 sind gebaut und am
+Stand: 2026-09-28, Version 0.4.0. Die drei Wünsche vom 27.09.2026 sind gebaut und am
 echten Fenster geprüft; am 28.09.2026 kamen das Paket zum Weitergeben, der Import ins
-Tagebuch und die Quellen für Podcasts dazu (Abschnitte unten). **Offener Auftrag:** die
-Audiodateien, die der User nach und nach liefert, an ihre Artikel hängen (siehe „Podcasts“).
+Tagebuch, die Quellen für Podcasts und die ersten sieben Podcasts in der App dazu
+(Abschnitte unten). **Offener Auftrag:** weitere Folgen, die der User nach und nach
+liefert, einbinden — Ablauf unter „Podcasts in der App“.
 
-## Podcasts (28.09.2026)
+## Podcasts in der App (28.09.2026, Version 0.4.0)
+
+Auftrag des Users: die ersten sieben Folgen (Nummern 001–007, alle aus „EU AI Act & Recht“)
+einbauen, „neben die Überschrift kommt ein stilistisch passender Playbutton“, Dateien
+„etwas komprimieren, da sie sehr groß sind — das überlasse ich dir“.
+
+- **Gebaut:** runder Knopf im Textfluss hinter dem Titel (Ring = gehörter Anteil, „Podcast ·
+  25 min“ bzw. „noch 12 min“); Leiste unter der Lesespalte mit −15/+30, Anhalten, Regler,
+  Restzeit, Tempo 1×–2×, Schließen — sie bleibt beim Seitenwechsel. Stelle und Tempo lokal.
+- **Zuordnung** (Dateiname ↔ Titel geprüft): 1 → `timeline`, 2 → `bussgeld`, 3 → `dsfa`,
+  4 → `ai-act`, 5 → `risikoklassen`, 6 → `gpai`, 7 → `hochrisiko`.
+- **Kompression:** Opus mono 32 kbit/s, 297,6 MB → 37,8 MB (je Folge 4–7 MB), Lautstärke
+  0,1–0,2 dB unter dem Original. Die Originale liegen unberührt in `Downloads`; die App braucht
+  sie nicht mehr.
+- **Nächste Folgen:** `npm run podcast:audio -- "<Downloads>\8. <Titel>.m4a" …`, `npm test`,
+  App schließen, `npm run tauri:build`, `npm run nativ:beweis -- .playwright-mcp/<ordner>`,
+  Installer `/S`, App starten, `npm run weitergabe`, Kopie auf dem Desktop ersetzen.
+- **Entscheidungen beim Bauen:** Podcasts gehen ins Paket für den Freund (die offene Frage von
+  vorhin — sie gehören zum Inhalt; Installer 41 MB statt 3,5 MB, bei 111 Folgen etwa 600 MB).
+  Kein Git LFS (Dateien 4–7 MB, GitHub empfiehlt Repos unter 1 GB). Keine Anzeige im Register,
+  welche Artikel einen Podcast haben — nicht beauftragt, und bei 111 von 111 wäre sie Rauschen.
+- **Geprüft am Endstand:** 200 Tests (Vitest), 15 Tests (cargo), Lint, Build; im Browser bei
+  1280 und 960 px angesehen (Knopf ein- und zweizeilig, Leiste, Ziehen am Regler mit Loslassen
+  außerhalb); `nativ:beweis` (Bilder in `.playwright-mcp/beweis-0.4.0/`): Datei neben der .exe,
+  Asset-Protokoll mit 206, Sprung auf 80 %, Weiterlaufen beim Seitenwechsel, keine CSP-Meldung;
+  danach 0.4.0 installiert und in der INSTALLIERTEN App (Pfad mit „ä“) eine Folge abgespielt.
+  Datenordner des Users danach byte-gleich (5 Dateien + 6 Dokumente, SHA-256). App wieder
+  gestartet; `weitergabe/KI-Enzyklopaedie-0.4.0.zip` gebaut, Desktop-Kopie ersetzt (0.3.0-Zip
+  und -Installer vom Desktop entfernt, den vom User entpackten Ordner `KI-Enzyklopaedie-0.3.0`
+  nicht angefasst).
+- **Nicht geprüft:** Hören mit Ohren — Klangqualität bei 32 kbit/s ist nach Xiph-Empfehlung
+  gewählt, nicht angehört. Medientasten der Tastatur (keine Media-Session-Anbindung gebaut).
+
+## Podcast-Quellen (28.09.2026)
 
 Wunsch des Users: zu jedem Wissensartikel einen Podcast, den er selbst in NotebookLM
 erzeugt; dafür je Artikel eine ausformulierte MD-Datei. Danach liefert er die Audiodateien
@@ -31,11 +65,8 @@ ihn ersichtlich sein, welche Datei (und welches Audio) zu welchem Artikel der Ap
   des Users war danach unverändert (7 Dateien, Größe, Zeitstempel, SHA-256). 0.3.0 installiert
   (über 0.2.0), App wieder gestartet; Paket `weitergabe/KI-Enzyklopaedie-0.3.0.zip` gebaut,
   Kopie auf dem Desktop ersetzt (0.2.0 liegt noch in `weitergabe/`).
-- **Nächster Schritt, sobald die erste Audiodatei kommt:** Nummer → Artikel-ID über
-  `podcastQuellen(...).dateien` (Feld `nummer`), dann die Einbindung in die App bauen
-  (Ablage, Format, Abspieler am Artikel). NotebookLM liefert laut Drittquellen WAV; die
-  erste Datei zeigt es. Offene Produktfrage an den User: sollen die Podcasts auch ins
-  Paket für den Freund (Installergröße) oder nur auf dem Laptop liegen?
+- **Einbindung:** gebaut, siehe „Podcasts in der App“ oben. NotebookLM liefert `.m4a`
+  (AAC), nicht WAV.
 - **Veraltete Aussagen der Akademie-Kurzartikel,** gefunden beim Schreiben der Vertiefungen.
   In App und Podcast-Quellen behoben (die Vertiefungen ersetzen diese Texte); in der Akademie
   selbst stehen sie noch — nur relevant, falls jemand die Akademie-Texte wieder nutzt:

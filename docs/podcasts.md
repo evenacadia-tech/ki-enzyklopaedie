@@ -2,7 +2,9 @@
 
 User-Auftrag 28.09.2026: zu jedem Wissensartikel einen Audio-Podcast, den der User selbst in
 Google NotebookLM erzeugt; dafür je Artikel eine ausformulierte Markdown-Datei als Quelle.
-Die fertigen Audiodateien kommen danach nach und nach in die App, je an ihren Artikel.
+Die fertigen Audiodateien kommen danach nach und nach in die App, je an ihren Artikel — mit einem
+„stilistisch passenden“ Play-Knopf neben der Überschrift und komprimiert, weil die Lieferungen
+sehr groß sind (User 28.09.2026, beides gebaut: Abschnitt „Audio in die App“).
 
 ## Die Quellen-Dateien
 
@@ -49,8 +51,10 @@ Stand 28.09.2026 laut Google-Hilfe (Produkt heißt dort inzwischen auch „Gemin
   lässt sich nur auf Englisch wählen — auf Deutsch richtet sie sich nach der Quelle.
 - Ein Notebook je Artikel ist am einfachsten; die Audio-Übersicht nutzt alle ausgewählten Quellen des
   Notebooks.
-- Herunterladen über das Menü der fertigen Audio-Übersicht. Das Dateiformat nennt Google nicht; die
-  erste gelieferte Datei zeigt es.
+- Herunterladen über das Menü der fertigen Audio-Übersicht. Geliefert wurde (28.09.2026) `.m4a`: AAC-LC,
+  44,1 kHz, Stereo mit zwei identischen Kanälen, 257 kbit/s — 16 bis 28 Minuten, 30 bis 51 MB je Folge.
+  Der Dateiname ist der Titel der Folge, den NotebookLM vergibt, mit Unterstrichen
+  (`Millionenstrafen_und_der_KMU-Schutzschild.m4a`).
 
 Text für das Feld „Anpassen“ (437 Zeichen, Grenze etwa 500):
 
@@ -60,6 +64,45 @@ Sprecht Deutsch. Zuhörer sind Einsteiger in KI-Beratung und Strategie, die den 
 
 ## Übergabe der Audiodateien
 
-Die Nummer der Quelle vorne in den Dateinamen schreiben (`057.wav`) oder beim Übergeben dazusagen.
-Am einfachsten heißt schon das Notebook wie die Datei (`057 Was Strategie ist – und was nicht`).
-Die Einbindung in die App (Ablage, Format, Abspieler am Artikel) wird mit der ersten Datei gebaut.
+Die Nummer der Quelle vorne in den Dateinamen schreiben — so hat der User die ersten sieben geliefert:
+`2. Millionenstrafen_und_der_KMU-Schutzschild.m4a`. Auch `057.wav` oder `057 Titel.m4a` gehen.
+
+## Audio in die App (gebaut 28.09.2026, Version 0.4.0)
+
+```
+npm run podcast:audio -- "C:\Users\phili\Downloads\2. Millionenstrafen_und_der_KMU-Schutzschild.m4a" …
+npm test
+```
+
+`scripts/podcast-audio.mts` prüft erst alle Dateien (Nummer bekannt? zwei Dateien für denselben
+Artikel?), dann je Datei:
+
+- **Zuordnung:** Nummer → Artikel-ID über `podcastQuellen(...).dateien` — die Nummer gilt für den
+  Stand von `Übersicht.md`, an dem die Folge entstand; dauerhaft hängt sie an der ID. Folgentitel =
+  Dateiname ohne Nummer, Unterstriche als Leerzeichen.
+- **Kompression:** Opus in Ogg, Mono, 48 kHz, 32 kbit/s VBR (`libopus` aus dem npm-Paket
+  `ffmpeg-static`, kommt mit `npm install` auf jeden Rechner). Begründung: die Lieferung ist doppeltes
+  Mono, Sprache mit kaum Anteilen über 12 kHz; Xiph empfiehlt für Podcasts in Mono 24 kbit/s
+  (<https://wiki.xiph.org/Opus_Recommended_Settings>), 32 lassen Reserve. Die Kanäle werden gemittelt
+  (`pan=mono|c0=0.5*c0+0.5*c1`): ffmpegs `-ac 1` hebt den Pegel um 3 dB und bringt Spitzen an die
+  Grenze. Ergebnis der ersten sieben: 297,6 MB → 37,8 MB, mittlerer Pegel je Folge 0,1–0,2 dB unter
+  dem Original (gemessen mit `volumedetect`, Quelle −24,0 bis −24,9 dB).
+  `bitexact` macht die Ausgabe wiederholbar: dieselbe Quelle ergibt dieselben Bytes.
+- **Prüfung:** Die fertige Datei muss Mono sein und so lang wie die Quelle (±0,5 s), sonst bricht
+  das Skript ab und lässt nichts Halbes liegen.
+- **Eintrag:** `src/podcast/audio.json` (Titel der Folge, Sekunden, Bytes, Name der Lieferung), in der
+  Reihenfolge des Themen-Registers. Der Test `src/podcast/podcast.test.ts` prüft jede Datei gegen
+  diesen Eintrag (Größe, Dauer aus dem Ogg-Kopf, Mono, höchstens 40 kbit/s) und dass in `podcasts/`
+  nichts anderes liegt.
+
+In der App:
+
+- Die Dateien liegen im Repo unter `podcasts/` und in der installierten App neben der .exe
+  (`bundle.resources`, `%LOCALAPPDATA%\KI-Enzyklopädie\podcasts\`), NICHT in `public/`: alles dort ginge
+  in `dist/` und damit in die .exe. Abgespielt wird über das Asset-Protokoll (Scope
+  `$RESOURCE/podcasts/**`, CSP `media-src`); es liefert Teilbereiche (206), damit das Springen geht.
+  Im Browser liefert der Vite-Server (`vite.config.ts`, Plugin `podcasts`) dieselben Dateien.
+- Größe: 4–7 MB je Folge; bei 111 Folgen etwa 600 MB im Repo und im Installer. GitHub empfiehlt
+  Repos unter 1 GB, sperrt erst Dateien über 100 MB — deshalb kein Git LFS.
+- Das Paket für den Freund enthält die Podcasts (Entscheid beim Bauen: sie gehören zum Inhalt wie die
+  Artikel). Installer mit sieben Folgen: 41 MB statt 3,5 MB.

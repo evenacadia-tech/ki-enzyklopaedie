@@ -4,7 +4,8 @@ Lese-App mit Tagebuch und Dokumentenablage: quellenbelegte, quervernetzte Artike
 Governance & Zertifizierung, Fallbeispielen, KI-Ethik und Verhaltensforschung — und zwei
 eigene Lesestrecken: **Strategie — Grundlagen** für den Einstieg in Unternehmensstrategie
 und Beraterhandwerk sowie **Psychologie für Strategie und Beratung** (Entscheiden,
-Gespräch, Organisation, Markt). 111 Artikel, 348 Quellen, jede Quelle mit Abrufdatum.
+Gespräch, Organisation, Markt). 111 Artikel, 425 Quellen, jede Quelle mit Abrufdatum;
+zu den ersten Artikeln ein Podcast zum Anhören (aus NotebookLM, in der App abspielbar).
 Dazu ein persönliches Tagebuch mit Kalender und ein Bereich für Zertifikate, wichtige
 Dokumente und Anhänge zu einzelnen Tagen. Kein Quiz, kein RAG, kein Konto, kein Netz.
 
@@ -32,6 +33,7 @@ Beide Quellen laufen durch denselben Load-Guard; Querverweise zeigen in beide Ri
 | Suchen | `/` springt ins Suchfeld; Titel, Synonyme und Fließtext, umlaut-tolerant (`bussgeld` findet „Bußgeld“) |
 | Verzeichnis | Themen (Grundlagen nach Thema, Sammlungen in Lesereihenfolge) oder A–Z; `↑`/`↓` wandern, `Enter` öffnet |
 | Lesen | Lede, Rumpf (bei langen Artikeln gegliedert, mit Inhaltsverzeichnis), „Siehe auch“, Quellen, „Verweist hierher“ |
+| Podcast | Artikel mit Podcast tragen neben dem Titel einen runden Knopf mit Dauer; der Ring zeigt, wie viel schon gehört ist. Beim Abspielen erscheint unten in der Lesespalte eine Leiste: **−15** / **+30** Sekunden, Anhalten, Regler zum Springen, Restzeit, Tempo (1× bis 2×) und Schließen. Sie bleibt stehen, wenn man einem Querverweis folgt oder ins Tagebuch wechselt; der Titel darin führt zurück zum Artikel. Stelle und Tempo werden lokal gemerkt — „fortsetzen, noch 12 min“ |
 | Lesestrecke | Artikel der Sammlungen (Strategie, Psychologie, Akademie-Sammlungen) haben am Ende **Zurück / Weiter** in Lesereihenfolge; die Randspalte zeigt „Lesestrecke 3 von 29“ |
 | Lesefortschritt | „Als gelesen markieren“ am Artikelende (oder „Weiter“ klicken) setzt einen Haken im Register und die Marke „Gelesen“; die Startseite zeigt je Lesestrecke „Weiterlesen“ mit dem nächsten ungelesenen Artikel. Wird lokal gemerkt |
 | Tagebuch | Tag im Kalender anklicken, schreiben — gespeichert wird von selbst (500 ms nach der letzten Änderung, sofort beim Verlassen); `Ctrl+S` erzwingt es. „Besonderes Ereignis“ markiert den Tag und gibt ihm eine Bezeichnung; das nächste Ereignis ab heute steht unter dem Kalender. Die Randspalte zeigt den vorherigen Eintrag als Rückblick |
@@ -49,6 +51,8 @@ Beide Quellen laufen durch denselben Load-Guard; Querverweise zeigen in beide Ri
 | Schriftgröße | Kopfzeile rechts (Kompakt/Normal/Groß), gilt für Lesetext und Tagebuch, wird lokal gemerkt |
 | Zurück/Vor | Die Zurück-Taste kehrt an die alte Leseposition zurück; ein Link beginnt oben. Das native Fenster merkt sich Größe und Lage |
 | Deep-Link | `#/artikel/<id>` (z. B. `#/artikel/strategie-begriff`), `#/tagebuch` (heute), `#/tagebuch/2026-09-26`, `#/dokumente`, `#/dokumente/<kennung>` |
+
+![Artikel mit Podcast: Knopf am Titel, Leiste unten](docs/bilder/nativ-artikel-podcast.png)
 
 ![Tagebuch mit Farben und Anhängen](docs/bilder/preview-tagebuch.png)
 
@@ -87,6 +91,9 @@ Beide Quellen laufen durch denselben Load-Guard; Querverweise zeigen in beide Ri
   oder über die Sicherungskopie geschrieben. Nur eine fehlende Datei ist ein leeres Tagebuch.
 - **Lesefortschritt:** localStorage-Schlüssel `ki-enzyklopaedie.gelesen.v1` (Liste von
   Artikel-IDs), im nativen Fenster im WebView2-Profil der App.
+- **Podcast-Stelle und Tempo:** localStorage-Schlüssel `ki-enzyklopaedie.podcast.v1`
+  (`{ tempo, stellen: { <artikel-id>: sekunden } }`). Wer weniger als 5 Sekunden oder bis in
+  die letzten 10 Sekunden gehört hat, beginnt beim nächsten Mal von vorn.
 
 ## Dokumente: wo die Daten liegen
 
@@ -107,10 +114,10 @@ Beide Quellen laufen durch denselben Load-Guard; Querverweise zeigen in beide Ri
 - **Browser (Preview):** nur das Verzeichnis im localStorage
   (`ki-enzyklopaedie.dokumente.v1`), keine Dateien — Hinzufügen, Öffnen und Vorschau gibt es
   nur in der App.
-- **Sicherheit:** Das Frontend nennt der Rust-Seite nie einen Zielpfad, nur die Kennung; die
-  Vorschau erreicht über das Asset-Protokoll ausschließlich den Ordner `dokumente\`
-  (`assetProtocol.scope` in `src-tauri/tauri.conf.json`). Ein Ladefehler sperrt auch hier
-  das Schreiben.
+- **Sicherheit:** Das Frontend nennt der Rust-Seite nie einen Zielpfad, nur die Kennung; das
+  Asset-Protokoll erreicht ausschließlich den Ordner `dokumente\` (Vorschau) und den Ordner
+  `podcasts\` neben der .exe (`assetProtocol.scope` in `src-tauri/tauri.conf.json`). Ein
+  Ladefehler sperrt auch hier das Schreiben.
 
 ## Gestaltung
 
@@ -130,7 +137,7 @@ npm run lint         # ESLint
 npm run build        # tsc --noEmit + vite build → dist/
 npm run tauri:dev    # natives Fenster gegen den Dev-Server
 npm run tauri:build  # Windows-Installer (NSIS) + .exe unter src-tauri/target/release/
-npm run nativ:beweis # startet die gebaute .exe, prüft Tagebuch, Dokumente, Vorschau und Sperren am echten Fenster, Screenshots nach docs/bilder/
+npm run nativ:beweis # startet die gebaute .exe, prüft Podcast, Tagebuch, Dokumente, Vorschau und Sperren am echten Fenster, Screenshots nach docs/bilder/
 npm run os:beweis    # zieht mit echter Maus Dateien aus dem Explorer in die App, prüft Öffnen, „Im Ordner zeigen“ und die Rückfrage vor dem Entfernen
 npm run weitergabe   # nach tauri:build: Paket zum Weitergeben (Installer + LIESMICH.txt, beides als ZIP) nach weitergabe/
 npm run tauri:installer-bild  # Seitenbild des Installers neu erzeugen (src-tauri/installer/seitenbild.bmp)
@@ -161,9 +168,10 @@ legt in `weitergabe/` (nicht eingecheckt) ab, was man jemandem geben kann:
 und einer `LIESMICH.txt` (Vorlage: `scripts/weitergabe-liesmich.txt`). Dateinamen ohne
 Umlaut, weil Umlaute in ZIP-Archiven und Anhängen gern kaputtgehen.
 
-- **Nichts Eigenes im Paket.** Der Installer enthält die `.exe` und das Hilfsprogramm von
-  Microsoft, das WebView2 nachinstalliert, falls es fehlt. Tagebuch und Dokumente liegen im
-  App-Datenordner und gehen nicht mit; wer installiert, beginnt leer.
+- **Nichts Eigenes im Paket.** Der Installer enthält die `.exe`, die Podcasts (sie gehören
+  zum Inhalt wie die Artikel; je Folge 4–7 MB, bei sieben Folgen 41 MB Installer) und das
+  Hilfsprogramm von Microsoft, das WebView2 nachinstalliert, falls es fehlt. Tagebuch und
+  Dokumente liegen im App-Datenordner und gehen nicht mit; wer installiert, beginnt leer.
 - **Der Installer ist deutsch** und trägt Icon und Seitenbild der App. Die eigenen Texte
   stehen in `src-tauri/installer/German.nsh`.
 - **Nicht signiert.** Windows SmartScreen warnt beim ersten Start („Der Computer wurde durch
@@ -205,6 +213,19 @@ der in Google NotebookLM ein Podcast (Audio-Übersicht) entsteht; der Artikel st
 so, wie die App ihn zeigt. Ablauf, Grenzen von NotebookLM und der Text für „Anpassen“:
 `docs/podcasts.md`.
 
+Fertige Folgen kommen so in die App (Nummer aus `notebooklm/Übersicht.md` vorne im
+Dateinamen, z. B. `2. Millionenstrafen_und_der_KMU-Schutzschild.m4a`):
+
+```bash
+npm run podcast:audio -- "<Downloads>\2. Millionenstrafen_und_der_KMU-Schutzschild.m4a" …
+npm test
+```
+
+Das Skript bildet die Nummer auf die Artikel-ID ab, kodiert nach `podcasts/<artikel-id>.opus`
+(Opus, Mono, 32 kbit/s — etwa ein Achtel der NotebookLM-Datei, Lautstärke wie im Original) und trägt
+Titel der Folge, Dauer und Größe in `src/podcast/audio.json` ein. Die Originale bleiben
+unberührt. Danach neu bauen und installieren.
+
 **Eigene Sammlungen:** Artikel direkt in `src/inhalt/sammlungen/<sammlung>/block-*.ts`
 schreiben (Typ `EigenerArtikel` in `src/inhalt/typen.ts`; nur `abschnitte`, der flache
 Rumpf wird abgeleitet), dann `npm test`. Der Load-Guard in `src/inhalt/index.ts` bricht
@@ -221,14 +242,15 @@ src/inhalt/      artikel.json (Akademie-Export) · vertiefungen/ (ausführliche 
 src/tagebuch/    modell.ts (Kalender-Arithmetik, KW, Fragen, Jahresbilanz, Farben, Datenformat) · speicher.ts (Datei/Browser) · zustand.ts (verzögerte Sicherung) · suche.ts · export.ts (Markdown) · import.ts (exportierte Datei lesen, mit dem Bestand abgleichen)
 src/dokumente/   modell.ts (Verzeichnis, Abteilungen, Anhänge je Tag, Suche, Größen) · speicher.ts (Ordner/Browser) · zustand.ts (Import, Entfernen, verzögerte Sicherung) · dialoge.ts (Dateiauswahl, Rückfrage) · ablage.ts (Hineinziehen)
 src/speicher/    json.ts (gemeinsamer Zugriff auf tagebuch.json und dokumente.json)
-src/podcast/     quelltext.ts (NotebookLM-Quelle je Artikel)
+src/podcast/     quelltext.ts (NotebookLM-Quelle je Artikel) · audio.json (erzeugt: Podcast je Artikel-ID) · katalog.ts · abspieler.ts (ein Audio-Element für die App, Stelle und Tempo) · lieferung.ts (Nummer aus dem Dateinamen) · ogg.ts (Dauer einer Opus-Datei)
+podcasts/        die Audiodateien, <artikel-id>.opus (in der App neben der .exe, Tauri-Ressourcen)
 src/suche/       Suche mit Faltung, Ranking, Snippets, Hervorhebung
-src/komponenten/ Kopf (Bereichs-Umschalter) · Seitenleiste · ArtikelAnsicht (mit Lesestrecke) · Start (mit Weiterlesen) · NichtGefunden · TagebuchLeiste (Suche, Kalender, Jahr, Fragen, Farbfilter, Export) · TagebuchImport (Dateiwahl, Vorschau, Wahl bei abweichenden Tagen) · TagebuchAnsicht (Farbwahl) · TagebuchAnhaenge · DokumenteLeiste · DokumenteUebersicht · DokumentAnsicht (Vorschau) · DokumentTeile · Markiert
+src/komponenten/ Kopf (Bereichs-Umschalter) · Seitenleiste · ArtikelAnsicht (mit Lesestrecke) · Podcast (Knopf am Titel, Leiste) · Start (mit Weiterlesen) · NichtGefunden · TagebuchLeiste (Suche, Kalender, Jahr, Fragen, Farbfilter, Export) · TagebuchImport (Dateiwahl, Vorschau, Wahl bei abweichenden Tagen) · TagebuchAnsicht (Farbwahl) · TagebuchAnhaenge · DokumenteLeiste · DokumenteUebersicht · DokumentAnsicht (Vorschau) · DokumentTeile · Markiert
 src/router.ts    Hash-Router (#/, #/artikel/<id>, #/tagebuch[/<datum>], #/dokumente[/<kennung>])
 src/einstellungen.ts  Schriftgröße + Register-Modus (localStorage)
 src/lesefortschritt.ts  gelesene Artikel (localStorage)
-src-tauri/       dünne Tauri-2-Hülle (ein Fenster, Opener-Plugin für Quellen-Links und Dokumente, Dialog-Plugin für Export, Dateiauswahl und Rückfrage, Window-State-Plugin, Asset-Protokoll für die Vorschau, eigene Commands für die JSON-Dateien und die Dokumente) · installer/ (deutsche Texte und Seitenbild des Installers)
-scripts/         export-aus-akademie.mts · podcast-quellen.mts · gen-icon.mjs · gen-installer-bild.mjs · nativ-beweis.mjs · os-beweis.mjs + os-helfer.ps1 · weitergabe.mjs + weitergabe-liesmich.txt · installer-beweis.ps1
+src-tauri/       dünne Tauri-2-Hülle (ein Fenster, Opener-Plugin für Quellen-Links und Dokumente, Dialog-Plugin für Export, Dateiauswahl und Rückfrage, Window-State-Plugin, Asset-Protokoll für Vorschau und Podcasts, Podcasts als Ressourcen, eigene Commands für die JSON-Dateien und die Dokumente) · installer/ (deutsche Texte und Seitenbild des Installers)
+scripts/         export-aus-akademie.mts · podcast-quellen.mts · podcast-audio.mts · gen-icon.mjs · gen-installer-bild.mjs · nativ-beweis.mjs · os-beweis.mjs + os-helfer.ps1 · weitergabe.mjs + weitergabe-liesmich.txt · installer-beweis.ps1
 docs/            NEXT-SESSION.md (Übergabe) · podcasts.md (Ablauf NotebookLM) · bilder/ (Screenshots)
 notebooklm/      erzeugte Podcast-Quellen, eine Datei je Artikel (Ordner wie das Themen-Register, Nummer + App-Titel) · Übersicht.md
 ```
