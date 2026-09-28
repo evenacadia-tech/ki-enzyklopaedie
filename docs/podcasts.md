@@ -24,13 +24,14 @@ npm run podcast:quellen
 - Inhalt: Titel, Einleitung, Herkunft (Sammlung, Thema, Stelle in der Lesestrecke, Synonyme), bei
   „im Wandel“ ein Hinweis mit dem Stand der Quellen, der volle Text, die Einordnung (Nachbarn in der
   Lesestrecke, verwandte Artikel mit ihrer Einleitung) und die Quellen.
-- Artikel mit Gliederung (alle Sammlungen außer den Grundlagen) stehen **wörtlich** darin — der Podcast
-  soll zum Artikel passen.
-- Die 41 Grundlagen-Artikel sind aus der Akademie exportierte Kurzartikel (40–150 Wörter); für einen
-  Podcast zu dünn. Für sie steht in der Datei eine **Vertiefung** (`src/podcast/vertiefungen/`,
-  600–1.000 Wörter, 2–5 geprüfte Quellen, Schluss „Grenzen und Kritik“ oder „Typische Fehler“),
-  geschrieben aus dem belegten Akademie-Material (Karteikarten, Quiz-Begründungen, Szenario-Vertiefungen)
-  und am 28.09.2026 neu geprüften Primärquellen. Die App zeigt die Vertiefungen nicht an.
+- Jeder Artikel steht **wörtlich** darin, so wie die App ihn zeigt — der Podcast soll zum Artikel
+  passen.
+- Die 41 Grundlagen-Artikel waren aus der Akademie exportierte Kurzartikel (40–150 Wörter), für einen
+  Podcast zu dünn und teils veraltet. Sie tragen seit dem 28.09.2026 in App und Quelle eine
+  **Vertiefung** (`src/inhalt/vertiefungen/`, 600–1.000 Wörter, 2–5 geprüfte Quellen, Schluss
+  „Grenzen und Kritik“ oder „Typische Fehler“), geschrieben aus dem belegten Akademie-Material
+  (Karteikarten, Quiz-Begründungen, Szenario-Vertiefungen) und am 28.09.2026 neu geprüften
+  Primärquellen.
 - `notebooklm/` ist eingecheckt: so bleibt nachvollziehbar, aus welchem Text ein Podcast entstand. Der
   Test „liegt in notebooklm/ auf dem Stand des Generators“ bricht, sobald ein Artikel geändert und die
   Dateien nicht neu erzeugt wurden.

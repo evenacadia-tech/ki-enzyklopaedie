@@ -1,4 +1,4 @@
-import type { Quelle } from '../../inhalt/typen';
+import type { Quelle } from '../typen';
 import type { Vertiefung } from '.';
 
 // Vertiefungen: ml-dl, llm, transformer, token-kontext, embedding, rag, fine-tuning.

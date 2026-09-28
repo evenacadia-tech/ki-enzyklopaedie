@@ -1,4 +1,4 @@
-import type { Quelle } from '../../inhalt/typen';
+import type { Quelle } from '../typen';
 import type { Vertiefung } from '.';
 
 // Governance und Zertifizierung (ISO/IEC 42001, harmonisierte Normen, NIST AI RMF, Konformität, HLEG); alle Quellen am 2026-09-28 abgerufen und geprüft.

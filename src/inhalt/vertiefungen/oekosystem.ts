@@ -1,4 +1,4 @@
-import type { Quelle } from '../../inhalt/typen';
+import type { Quelle } from '../typen';
 import type { Vertiefung } from '.';
 
 // Vertiefungen: datensouveraenitaet, aleph-alpha, oekosystem-de, branchen-praxis. Alle Quellen am 2026-09-28 abgerufen und geprüft.

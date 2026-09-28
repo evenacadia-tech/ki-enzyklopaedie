@@ -190,15 +190,20 @@ schreibt `src/inhalt/artikel.json` mit `meta.quelle` = Akademie-Commit. Würde e
 entfernen (etwa aus einem älteren Klon der Akademie), bricht er ab und nennt sie;
 `--verlust-ok` am Ende erzwingt den Export.
 
+**Grundlagen:** Den Text der 41 Grundlagen-Artikel zeigt die App aus
+`src/inhalt/vertiefungen/` (ausführliche, am 28.09.2026 geprüfte Fassungen); aus der
+Akademie kommen dort nur Titel, Thema, Querverweise, Synonyme und die Marke „im Wandel“.
+Textfehler dieser Artikel also in den Vertiefungen beheben, nicht in der Akademie.
+
 **Danach immer** `npm run podcast:quellen` — die Quellen für die Podcasts (siehe unten)
 müssen zum Artikeltext passen.
 
 ## Podcasts
 
 `npm run podcast:quellen` schreibt nach `notebooklm/` je Artikel eine Markdown-Datei, aus
-der in Google NotebookLM ein Podcast (Audio-Übersicht) entsteht. Die 41 Kurzartikel der
-Grundlagen stehen darin in einer ausführlichen Fassung (`src/podcast/vertiefungen/`).
-Ablauf, Grenzen von NotebookLM und der Text für „Anpassen“: `docs/podcasts.md`.
+der in Google NotebookLM ein Podcast (Audio-Übersicht) entsteht; der Artikel steht darin
+so, wie die App ihn zeigt. Ablauf, Grenzen von NotebookLM und der Text für „Anpassen“:
+`docs/podcasts.md`.
 
 **Eigene Sammlungen:** Artikel direkt in `src/inhalt/sammlungen/<sammlung>/block-*.ts`
 schreiben (Typ `EigenerArtikel` in `src/inhalt/typen.ts`; nur `abschnitte`, der flache
@@ -212,11 +217,11 @@ Verlagsseite Abrufe per Skript blockiert.
 ## Aufbau
 
 ```
-src/inhalt/      artikel.json (Akademie-Export) · sammlungen/ (eigene Sammlungen, vereinige) · typen.ts · index.ts (Load-Guard, Register, Rückverweise)
+src/inhalt/      artikel.json (Akademie-Export) · vertiefungen/ (ausführliche Fassungen der 41 Grundlagen, vertiefe) · sammlungen/ (eigene Sammlungen, vereinige) · typen.ts · index.ts (Load-Guard, Register, Rückverweise)
 src/tagebuch/    modell.ts (Kalender-Arithmetik, KW, Fragen, Jahresbilanz, Farben, Datenformat) · speicher.ts (Datei/Browser) · zustand.ts (verzögerte Sicherung) · suche.ts · export.ts (Markdown) · import.ts (exportierte Datei lesen, mit dem Bestand abgleichen)
 src/dokumente/   modell.ts (Verzeichnis, Abteilungen, Anhänge je Tag, Suche, Größen) · speicher.ts (Ordner/Browser) · zustand.ts (Import, Entfernen, verzögerte Sicherung) · dialoge.ts (Dateiauswahl, Rückfrage) · ablage.ts (Hineinziehen)
 src/speicher/    json.ts (gemeinsamer Zugriff auf tagebuch.json und dokumente.json)
-src/podcast/     quelltext.ts (NotebookLM-Quelle je Artikel) · vertiefungen/ (ausführliche Fassungen der Grundlagen-Kurzartikel)
+src/podcast/     quelltext.ts (NotebookLM-Quelle je Artikel)
 src/suche/       Suche mit Faltung, Ranking, Snippets, Hervorhebung
 src/komponenten/ Kopf (Bereichs-Umschalter) · Seitenleiste · ArtikelAnsicht (mit Lesestrecke) · Start (mit Weiterlesen) · NichtGefunden · TagebuchLeiste (Suche, Kalender, Jahr, Fragen, Farbfilter, Export) · TagebuchImport (Dateiwahl, Vorschau, Wahl bei abweichenden Tagen) · TagebuchAnsicht (Farbwahl) · TagebuchAnhaenge · DokumenteLeiste · DokumenteUebersicht · DokumentAnsicht (Vorschau) · DokumentTeile · Markiert
 src/router.ts    Hash-Router (#/, #/artikel/<id>, #/tagebuch[/<datum>], #/dokumente[/<kennung>])

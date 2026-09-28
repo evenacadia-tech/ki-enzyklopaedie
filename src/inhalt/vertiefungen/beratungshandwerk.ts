@@ -1,4 +1,4 @@
-import type { Quelle } from '../../inhalt/typen';
+import type { Quelle } from '../typen';
 import type { Vertiefung } from '.';
 
 // Beratungshandwerk: reifegrad, use-case-prio, poc-pilot-skalierung, business-case, build-vs-buy, change-management. Alle Quellen am 2026-09-28 abgerufen und geprüft (DOI über Crossref).

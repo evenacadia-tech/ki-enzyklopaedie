@@ -1,4 +1,4 @@
-import type { Quelle } from '../../inhalt/typen';
+import type { Quelle } from '../typen';
 import type { Vertiefung } from '.';
 
 // Vertiefungen zum EU AI Act (Stand nach der Änderungsverordnung (EU) 2026/1744). Alle Quellen am 2026-09-28 abgerufen und geprüft.

@@ -51,7 +51,8 @@ niemand am Rechner arbeitet; `SKALIERUNG=1.5` davor rechnet wie ein skalierter B
 
 ## Inhalt
 
-Zwei Quellen, ein Load-Guard (`src/inhalt/index.ts` → `vereinige` in
+Zwei Quellen plus die Vertiefungen, ein Load-Guard (`src/inhalt/index.ts` →
+`vertiefe` in `src/inhalt/vertiefungen/index.ts` → `vereinige` in
 `src/inhalt/sammlungen/index.ts`):
 
 - `src/inhalt/artikel.json` ist GENERIERT (`npm run inhalt:export -- <akademie-pfad>`).
@@ -63,6 +64,16 @@ Zwei Quellen, ein Load-Guard (`src/inhalt/index.ts` → `vereinige` in
   dafür vier Artikel „Lokale KI“ und das Change-Paket). Ein Export von dort entfernt die vier
   Voicebot-Artikel — das Skript bricht deshalb ab, wenn Artikel-IDs verschwinden würden
   (`--verlust-ok` erzwingt). Erst beide Stände zusammenführen. Dort `npm ci`, bevor der Export läuft.
+- `src/inhalt/vertiefungen/` (seit 28.09.2026, Umsetzung der Empfehlung beim Podcast-Auftrag):
+  ausführliche Fassungen der 41 Grundlagen-Kurzartikel (je 600–1.000 Wörter, 2–5 am 28.09.2026
+  geprüfte Quellen, Autorenvertrag wie die eigenen Sammlungen, Test `vertiefungen.test.ts`).
+  `vertiefe` ersetzt Rumpf, Gliederung und Quellen (optional die Einleitung) der Akademie-Artikel;
+  aus der Akademie bleiben ID, Titel, Thema, Querverweise, Synonyme, „im Wandel“. Grund: die
+  Kurztexte waren für Podcasts zu dünn und teils veraltet (Digital Omnibus, OWASP 2026 …), und
+  die Akademie mit dem Exportstand liegt nicht auf dem Laptop. Folge: Textfehler dieser 41
+  Artikel HIER beheben, nicht in der Akademie; ein neuer Export ändert ihren Text nicht. Bringt
+  ein Export einen neuen Grundlagen-Kurzartikel ohne Vertiefung, bricht der Test — Vertiefung
+  schreiben.
 - `src/inhalt/sammlungen/<sammlung>/` sind EIGENE, von Hand gepflegte Sammlungen
   (`strategie/`, fünf Block-Dateien; `psychologie/`, vier Block-Dateien — User-Entscheid
   26.09.2026: Strategiebereich mit Fokus Psychologie ausbauen, alle vier Blöcke gleich
@@ -94,9 +105,8 @@ Zwei Quellen, ein Load-Guard (`src/inhalt/index.ts` → `vereinige` in
   folgen dem Themen-Register der App, Dateiname = App-Titel (User: jede Audiodatei muss eindeutig
   ihrem Artikel zuzuordnen sein). Eingecheckt; der Test in `src/podcast/quelltext.test.ts` bricht,
   wenn die Dateien nicht zum Generator passen — nach JEDER Inhaltsänderung neu erzeugen.
-- Gegliederte Artikel stehen wörtlich darin. Die 41 Grundlagen-Kurzartikel bekommen eine Vertiefung
-  (`src/podcast/vertiefungen/`, Autorenvertrag wie die eigenen Sammlungen, 600–1.000 Wörter); die App
-  zeigt sie nicht an. Ablauf für den User, NotebookLM-Grenzen und Anpassen-Text: `docs/podcasts.md`.
+- Jeder Artikel steht wörtlich darin, so wie die App ihn zeigt (Grundlagen mit ihrer Vertiefung,
+  siehe „Inhalt“). Ablauf für den User, NotebookLM-Grenzen und Anpassen-Text: `docs/podcasts.md`.
 - Der User übergibt Audio mit der Nummer aus `Übersicht.md`; die Nummer verschiebt sich, wenn
   Artikel dazukommen — sofort auf die Artikel-ID abbilden, an der das Audio dauerhaft hängt.
   Einbindung in die App: noch nicht gebaut.

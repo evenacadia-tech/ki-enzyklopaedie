@@ -1,4 +1,4 @@
-import type { Quelle } from '../../inhalt/typen';
+import type { Quelle } from '../typen';
 import type { Vertiefung } from '.';
 
 // Vertiefungen Sicherheit und Modelle: halluzination, agenten, prompt-injection, datenabfluss, owasp, modelllandschaft. Alle Quellen am 2026-09-28 abgerufen und geprüft.

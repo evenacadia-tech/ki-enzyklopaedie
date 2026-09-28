@@ -1,4 +1,4 @@
-import type { Quelle } from '../../inhalt/typen';
+import type { Quelle } from '../typen';
 import type { Vertiefung } from '.';
 
 // Vertiefungen: timeline, tdm-urheberrecht, dsfa, ki-kompetenz, mitbestimmung. Alle Quellen am 2026-09-28 abgerufen

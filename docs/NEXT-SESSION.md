@@ -1,6 +1,6 @@
 # Übergabe an die nächste Sitzung
 
-Stand: 2026-09-28, Version 0.2.0. Die drei Wünsche vom 27.09.2026 sind gebaut und am
+Stand: 2026-09-28, Version 0.3.0. Die drei Wünsche vom 27.09.2026 sind gebaut und am
 echten Fenster geprüft; am 28.09.2026 kamen das Paket zum Weitergeben, der Import ins
 Tagebuch und die Quellen für Podcasts dazu (Abschnitte unten). **Offener Auftrag:** die
 Audiodateien, die der User nach und nach liefert, an ihre Artikel hängen (siehe „Podcasts“).
@@ -18,18 +18,22 @@ ihn ersichtlich sein, welche Datei (und welches Audio) zu welchem Artikel der Ap
 - **Alte Einträge:** Der User vermutete ausformulierte Texte in Akademie oder Leitstand.
   Leitstand: nichts (Agenten-Werkzeug). Akademie: keine Prosa, aber je Grundlagen-Artikel
   Karteikarten, Quiz-Begründungen und Szenario-„Vertiefungen“ (2.000–16.000 Wörter) —
-  Grundlage der 41 Vertiefungen in `src/podcast/vertiefungen/` (je 600–900 Wörter, 2–5
+  Grundlage der 41 Vertiefungen in `src/inhalt/vertiefungen/` (je 600–900 Wörter, 2–5
   Quellen, alle am 28.09.2026 abgerufen; von sieben Agenten geschrieben, von mir gegen die
   Quellen stichprobenartig geprüft, jede Quelle erreichbar oder bekannt bot-gesperrt).
+- **Die App zeigt die Vertiefungen** (Version 0.3.0): Sie ersetzen Text und Quellen der 41
+  Grundlagen-Artikel (`vertiefe` in `src/inhalt/vertiefungen/index.ts`). Empfehlung, die ich
+  dem User gegeben und umgesetzt habe, weil die Kurztexte veraltet waren und die Akademie
+  mit dem Exportstand nur auf dem anderen Rechner liegt; Artikel und Podcast sagen jetzt
+  dasselbe. Im Browser bei 1280 px angesehen (KI-Kompetenz, RAG).
 - **Nächster Schritt, sobald die erste Audiodatei kommt:** Nummer → Artikel-ID über
   `podcastQuellen(...).dateien` (Feld `nummer`), dann die Einbindung in die App bauen
   (Ablage, Format, Abspieler am Artikel). NotebookLM liefert laut Drittquellen WAV; die
   erste Datei zeigt es. Offene Produktfrage an den User: sollen die Podcasts auch ins
   Paket für den Freund (Installergröße) oder nur auf dem Laptop liegen?
-- **Veraltete Aussagen in den App-Artikeln (Grundlagen, aus der Akademie exportiert),**
-  gefunden beim Schreiben der Vertiefungen; die Vertiefungen haben den richtigen Stand, die
-  App zeigt noch den alten. Korrektur gehört in die Akademie — deren aktueller Stand liegt
-  aber nur auf dem anderen Rechner (`c785dbb`, siehe `CLAUDE.md` → Inhalt):
+- **Veraltete Aussagen der Akademie-Kurzartikel,** gefunden beim Schreiben der Vertiefungen.
+  In App und Podcast-Quellen behoben (die Vertiefungen ersetzen diese Texte); in der Akademie
+  selbst stehen sie noch — nur relevant, falls jemand die Akademie-Texte wieder nutzt:
   - `timeline`: „Verbote (Art. 5), KI-Kompetenz (Art. 4) und Transparenz (Art. 50) bleiben
     unverändert“ ist falsch — Art. 4 neu gefasst, zwei neue Verbote ab 02.12.2026,
     Übergangsfrist Art. 50 Abs. 2 bis 02.12.2026 (VO (EU) 2026/1744). Anhang I war

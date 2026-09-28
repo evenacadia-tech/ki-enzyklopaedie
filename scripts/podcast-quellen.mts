@@ -11,12 +11,11 @@ import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, rmdirSync, wr
 import { dirname, join, resolve } from 'node:path';
 import { enzyklopaedie } from '../src/inhalt/index.ts';
 import { UEBERSICHT_DATEI, podcastQuellen } from '../src/podcast/quelltext.ts';
-import { vertiefungen } from '../src/podcast/vertiefungen/index.ts';
 
 const ZIEL = resolve('notebooklm');
 const ABTEILUNGS_ORDNER = /^\d{2} (Grundlagen|Sammlung) – /;
 
-const { dateien, uebersicht, fehlend } = podcastQuellen(enzyklopaedie, vertiefungen);
+const { dateien, uebersicht, fehlend } = podcastQuellen(enzyklopaedie);
 const soll = new Set(dateien.map((d) => d.pfad));
 
 let neu = 0;
@@ -46,6 +45,6 @@ for (const ordner of readdirSync(ZIEL, { withFileTypes: true })) {
 console.log(`→ ${ZIEL}`);
 console.log(`${dateien.length} Dateien + ${UEBERSICHT_DATEI} (${neu} neu, ${geaendert} geändert, ${entfernt} entfernt)`);
 if (fehlend.length > 0) {
-  console.warn(`\nOHNE DATEI — Vertiefung fehlt noch (src/podcast/vertiefungen/): ${fehlend.length}`);
+  console.warn(`\nOHNE DATEI — Kurzartikel ohne Vertiefung (src/inhalt/vertiefungen/): ${fehlend.length}`);
   console.warn(fehlend.join(', '));
 }
