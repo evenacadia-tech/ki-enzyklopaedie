@@ -25,10 +25,10 @@
       }
     ],
     "security": {
-      "csp": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: asset: http://asset.localhost; frame-src asset: http://asset.localhost; connect-src 'self' ipc: http://ipc.localhost",
+      "csp": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: asset: http://asset.localhost; media-src asset: http://asset.localhost; frame-src asset: http://asset.localhost; connect-src 'self' ipc: http://ipc.localhost",
       "assetProtocol": {
         "enable": true,
-        "scope": ["$APPDATA/dokumente/**"]
+        "scope": ["$APPDATA/dokumente/**", "$RESOURCE/podcasts/**"]
       }
     }
   },
@@ -36,6 +36,9 @@
     "active": true,
     "targets": ["nsis"],
     "category": "Education",
+    "resources": {
+      "../podcasts/": "podcasts/"
+    },
     "shortDescription": "KI-Enzyklopädie — quellenbelegtes Nachschlagewerk zu KI-Consulting, EU AI Act, Governance und KI-Ethik",
     "longDescription": "Reine Lese-App: quervernetzte, quellenbelegte Artikel zu KI-Consulting, EU AI Act, Governance & Zertifizierung, Fallbeispielen sowie KI-Ethik und Verhaltensforschung. Läuft offline als native Windows-App.",
     "icon": [

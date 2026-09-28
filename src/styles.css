@@ -193,6 +193,14 @@ kbd {
   min-height: 0;
 }
 
+/* Lesespalte: Bühne oben (rollt), Podcast-Leiste darunter, solange ein Podcast geladen ist. */
+.spalte {
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
+  min-width: 0;
+  min-height: 0;
+}
+
 /* ── Kopfzeile ────────────────────────────────────────────────────────────── */
 
 .kopf {
@@ -733,6 +741,101 @@ kbd {
   letter-spacing: -0.022em;
   color: var(--text-stark);
   text-wrap: balance;
+}
+
+/* Mit Podcast: Titel und Knopf in EINEM Textfluss — der Knopf steht hinter dem letzten
+   Wort, auch wenn der Titel umbricht. (Als Flex-Zeile behielt ein umbrochener Titel seine
+   volle Breite, der Knopf stand dann weit rechts neben einer Lücke.) Größe, Zeilenhöhe
+   und Maß des Titels trägt deshalb die Zeile; der Titel läuft inline mit. */
+.artikel__titelzeile--podcast {
+  max-width: calc(30ch + 150px);
+  font-size: clamp(30px, 2.05em, 40px);
+  line-height: 1.12;
+  text-wrap: balance;
+}
+.artikel__titelzeile--podcast .artikel__titel {
+  display: inline;
+  font-size: inherit;
+}
+.artikel__titelzeile--podcast .podcastknopf {
+  margin: -6px 0 -6px 22px;
+  vertical-align: middle;
+}
+
+.podcastknopf {
+  display: inline-flex;
+  white-space: nowrap;
+  align-items: center;
+  gap: 11px;
+  padding: 2px 14px 2px 2px;
+  border-radius: 999px;
+  color: var(--akzent);
+  transition: color var(--takt) var(--kurve);
+}
+.podcastknopf:focus-visible {
+  border-radius: 999px;
+}
+.podcastknopf__kreis {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  transition: background var(--takt) var(--kurve);
+}
+.podcastknopf__kreis > svg:last-child {
+  position: relative;
+  width: 16px;
+  height: 16px;
+}
+/* Der Ring zeigt, wie viel schon gehört ist (beginnt oben, läuft im Uhrzeigersinn). */
+.podcastknopf__ring {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+}
+.podcastknopf__spur,
+.podcastknopf__anteil {
+  fill: none;
+  stroke-width: 1.5;
+}
+.podcastknopf__spur {
+  stroke: var(--linie-stark);
+}
+.podcastknopf__anteil {
+  stroke: var(--akzent);
+  transition: stroke-dashoffset 300ms linear;
+}
+.podcastknopf:hover,
+.podcastknopf--spielt {
+  color: var(--akzent-hell);
+}
+.podcastknopf:hover .podcastknopf__kreis,
+.podcastknopf--spielt .podcastknopf__kreis {
+  background: var(--akzent-wasch);
+}
+.podcastknopf__text {
+  display: grid;
+  gap: 2px;
+  text-align: left;
+  line-height: 1.25;
+}
+.podcastknopf__art {
+  font-size: 10.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.podcastknopf__dauer {
+  font-size: 11.5px;
+  color: var(--text-3);
+  white-space: nowrap;
+  transition: color var(--takt) var(--kurve);
+}
+.podcastknopf:hover .podcastknopf__dauer {
+  color: var(--text-2);
 }
 
 .artikel__synonyme {
@@ -1309,6 +1412,241 @@ a.lesestrecke__link:hover {
   text-decoration-color: var(--akzent-hell);
 }
 
+/* ── Podcast-Leiste ───────────────────────────────────────────────────────── */
+
+/* Unter der Bühne, gleiche Innenbreite und gleicher Rand wie der Artikel — die Knöpfe
+   stehen bündig mit dem Lesetext darüber. */
+.podcastleiste {
+  border-top: 1px solid var(--linie-stark);
+  background: var(--flaeche);
+  animation: leiste-rein var(--takt-seite) var(--kurve);
+}
+@keyframes leiste-rein {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.podcastleiste__innen {
+  max-width: 1160px;
+  margin: 0 auto;
+  padding: 10px 56px;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 24px;
+}
+
+.podcastleiste__steuerung,
+.podcastleiste__rechts {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.podcastleiste__haupt {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  margin: 0 2px;
+  border-radius: 50%;
+  background: var(--akzent);
+  color: var(--grund);
+  transition:
+    background var(--takt) var(--kurve),
+    transform var(--takt) var(--kurve);
+}
+.podcastleiste__haupt:hover {
+  background: var(--akzent-hell);
+}
+.podcastleiste__haupt:active {
+  transform: scale(0.95);
+}
+.podcastleiste__haupt:focus-visible {
+  border-radius: 50%;
+}
+.podcastleiste__haupt svg {
+  width: 16px;
+  height: 16px;
+}
+.podcastleiste__sprung,
+.podcastleiste__tempo {
+  height: 28px;
+  padding: 0 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  letter-spacing: 0.02em;
+  color: var(--text-2);
+  transition:
+    color var(--takt) var(--kurve),
+    background var(--takt) var(--kurve),
+    border-color var(--takt) var(--kurve);
+}
+.podcastleiste__sprung {
+  min-width: 36px;
+}
+.podcastleiste__sprung:hover,
+.podcastleiste__zu:hover {
+  color: var(--text-stark);
+  background: var(--flaeche-3);
+}
+.podcastleiste__tempo {
+  min-width: 54px;
+  padding: 0 10px;
+  border: 1px solid var(--linie-stark);
+}
+.podcastleiste__tempo:hover {
+  color: var(--text-stark);
+  border-color: var(--akzent);
+}
+.podcastleiste__zu {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  color: var(--text-3);
+  transition:
+    color var(--takt) var(--kurve),
+    background var(--takt) var(--kurve);
+}
+.podcastleiste__zu:focus-visible {
+  border-radius: 50%;
+}
+.podcastleiste__zu svg {
+  width: 12px;
+  height: 12px;
+}
+
+.podcastleiste__mitte {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+.podcastleiste__titel {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  min-width: 0;
+  margin: 0;
+  font-size: 13.5px;
+  line-height: 1.35;
+  white-space: nowrap;
+}
+.podcastleiste__folge {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--text-stark);
+}
+.podcastleiste__artikel {
+  flex: 0 3 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 12px;
+  color: var(--text-3);
+}
+.podcastleiste__folge + .podcastleiste__artikel::before {
+  content: '·';
+  margin-right: 10px;
+  color: var(--leise);
+}
+.podcastleiste__artikel--allein {
+  font-size: 13.5px;
+  color: var(--text-stark);
+}
+.podcastleiste__artikel--link {
+  transition: color var(--takt) var(--kurve);
+}
+.podcastleiste__artikel--link:hover {
+  color: var(--akzent);
+}
+
+.zeitleiste {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+}
+.zeitleiste__zeit {
+  min-width: 5ch;
+  font-size: 11px;
+  color: var(--text-3);
+}
+.zeitleiste__zeit--rest {
+  text-align: right;
+}
+/* Regler: 3-px-Spur, gehörter Teil in Gold (--anteil setzt die Komponente), heller Knopf. */
+.zeitleiste__regler {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 16px;
+  margin: 0;
+  background: transparent;
+  cursor: pointer;
+}
+.zeitleiste__regler::-webkit-slider-runnable-track {
+  height: 3px;
+  border-radius: 999px;
+  background: linear-gradient(to right, var(--akzent) 0 var(--anteil), var(--linie-stark) var(--anteil) 100%);
+}
+.zeitleiste__regler::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 11px;
+  height: 11px;
+  margin-top: -4px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--text-stark);
+  box-shadow: 0 0 0 3px var(--flaeche);
+  transition: transform var(--takt) var(--kurve);
+}
+.zeitleiste__regler:hover::-webkit-slider-thumb {
+  transform: scale(1.2);
+}
+.zeitleiste__regler:focus-visible {
+  outline: none;
+  box-shadow: none;
+}
+.zeitleiste__regler:focus-visible::-webkit-slider-thumb {
+  box-shadow:
+    0 0 0 3px var(--flaeche),
+    0 0 0 5px var(--akzent);
+}
+.zeitleiste__regler::-moz-range-track {
+  height: 3px;
+  border-radius: 999px;
+  background: var(--linie-stark);
+}
+.zeitleiste__regler::-moz-range-progress {
+  height: 3px;
+  border-radius: 999px;
+  background: var(--akzent);
+}
+.zeitleiste__regler::-moz-range-thumb {
+  width: 11px;
+  height: 11px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--text-stark);
+}
+
+.podcastleiste__fehler {
+  max-width: 1160px;
+  margin: 0 auto;
+  padding: 0 56px 10px;
+  font-size: 12.5px;
+  color: var(--warn);
+}
+
 /* ── Enge Fenster ─────────────────────────────────────────────────────────── */
 
 @media (max-width: 1180px) {
@@ -1356,6 +1694,13 @@ a.lesestrecke__link:hover {
   }
   .kopf__meta {
     display: none;
+  }
+  .podcastleiste__innen {
+    padding: 10px 32px;
+    gap: 16px;
+  }
+  .podcastleiste__fehler {
+    padding: 0 32px 10px;
   }
 }
 

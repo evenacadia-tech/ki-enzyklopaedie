@@ -1,0 +1,47 @@
+{
+  "version": 1,
+  "podcasts": {
+    "timeline": {
+      "titel": "AI Act Fristen nach dem Digital Omnibus",
+      "sekunden": 1194.41,
+      "bytes": 4891734,
+      "quelle": "1. AI_Act_Fristen_nach_dem_Digital_Omnibus.m4a"
+    },
+    "bussgeld": {
+      "titel": "Millionenstrafen und der KMU-Schutzschild",
+      "sekunden": 1480.81,
+      "bytes": 6076449,
+      "quelle": "2. Millionenstrafen_und_der_KMU-Schutzschild.m4a"
+    },
+    "dsfa": {
+      "titel": "Ohne DSFA stirbt euer KI-Projekt",
+      "sekunden": 983.53,
+      "bytes": 4003878,
+      "quelle": "3. Ohne_DSFA_stirbt_euer_KI-Projekt.m4a"
+    },
+    "ai-act": {
+      "titel": "EU AI Act für Anbieter und Betreiber",
+      "sekunden": 1513.41,
+      "bytes": 6205726,
+      "quelle": "4. EU_AI_Act_für_Anbieter_und_Betreiber.m4a"
+    },
+    "risikoklassen": {
+      "titel": "Einsatzzweck entscheidet über das KI-Risiko",
+      "sekunden": 1550.54,
+      "bytes": 6345500,
+      "quelle": "5. Einsatzzweck_entscheidet_über_das_KI-Risiko.m4a"
+    },
+    "gpai": {
+      "titel": "Regeln und Haftung für GPAI Modelle",
+      "sekunden": 1661.04,
+      "bytes": 6771943,
+      "quelle": "6. Regeln_und_Haftung_für_GPAI_Modelle.m4a"
+    },
+    "hochrisiko": {
+      "titel": "Wann KI-Tools im Unternehmen zum Hochrisiko werden",
+      "sekunden": 1311.37,
+      "bytes": 5359863,
+      "quelle": "7. Wann_KI-Tools_im_Unternehmen_zum_Hochrisiko_werden.m4a"
+    }
+  }
+}

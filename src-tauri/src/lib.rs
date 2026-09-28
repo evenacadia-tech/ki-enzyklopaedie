@@ -501,8 +501,8 @@ mod tests {
         assert!(csp.contains("default-src 'self'"));
         assert!(!csp.contains("https:"), "kein pauschaler Remote-Zugriff");
         assert!(!csp.contains('*'), "keine Platzhalter in der CSP");
-        // Vorschau der Dokumente: Bilder und PDF nur über das Asset-Protokoll.
-        for direktive in ["img-src", "frame-src"] {
+        // Vorschau der Dokumente (Bilder, PDF) und Podcasts nur über das Asset-Protokoll.
+        for direktive in ["img-src", "frame-src", "media-src"] {
             let teil = csp
                 .split(';')
                 .map(str::trim)
@@ -517,7 +517,7 @@ mod tests {
     }
 
     #[test]
-    fn asset_protokoll_reicht_nur_in_den_dokumente_ordner() {
+    fn asset_protokoll_reicht_nur_in_dokumente_und_podcasts() {
         let c = config();
         let asset = &c["app"]["security"]["assetProtocol"];
         assert_eq!(asset["enable"], true);
@@ -527,7 +527,22 @@ mod tests {
             .iter()
             .map(|s| s.as_str().unwrap())
             .collect();
-        assert_eq!(scope, vec!["$APPDATA/dokumente/**"]);
+        assert_eq!(scope, vec!["$APPDATA/dokumente/**", "$RESOURCE/podcasts/**"]);
+    }
+
+    /// Die Podcasts liegen als Ressourcen neben der .exe (nicht in ihr) — genau der Ordner,
+    /// den das Asset-Protokoll freigibt und aus dem `podcast/abspieler.ts` liest.
+    #[test]
+    fn podcasts_liegen_als_ressourcen_neben_der_exe() {
+        let c = config();
+        assert_eq!(c["bundle"]["resources"], serde_json::json!({ "../podcasts/": "podcasts/" }));
+        let ordner = Path::new(env!("CARGO_MANIFEST_DIR")).join("../podcasts");
+        let opus = fs::read_dir(&ordner)
+            .expect("Ordner podcasts/ vorhanden")
+            .filter_map(Result::ok)
+            .filter(|e| e.path().extension().is_some_and(|x| x == "opus"))
+            .count();
+        assert!(opus > 0, "mindestens ein Podcast in {}", ordner.display());
     }
 
     /// Der Installer geht an andere Leute: deutsch, mit eigenem Bild, und die eigenen

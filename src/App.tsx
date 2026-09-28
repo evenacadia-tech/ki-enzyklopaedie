@@ -14,6 +14,8 @@ import { TagebuchAnsicht } from './komponenten/TagebuchAnsicht';
 import { DokumenteLeiste } from './komponenten/DokumenteLeiste';
 import { DokumenteUebersicht } from './komponenten/DokumenteUebersicht';
 import { DokumentAnsicht } from './komponenten/DokumentAnsicht';
+import { PodcastLeiste } from './komponenten/Podcast';
+import { sichereStelle } from './podcast/abspieler';
 
 const TITEL = 'KI-Enzyklopädie';
 
@@ -107,11 +109,13 @@ export function App() {
     return () => document.removeEventListener('keydown', aufTaste);
   }, []);
 
-  // Beim Schließen/Verlassen ausstehende Änderungen (Tagebuch, Dokumente) sofort sichern.
+  // Beim Schließen/Verlassen ausstehende Änderungen (Tagebuch, Dokumente) und die Stelle
+  // im Podcast sofort sichern.
   useEffect(() => {
     const sichern = () => {
       void speichereJetzt();
       void speichereDokumenteJetzt();
+      sichereStelle();
     };
     window.addEventListener('pagehide', sichern);
     window.addEventListener('beforeunload', sichern);
@@ -132,27 +136,32 @@ export function App() {
         ) : (
           <Seitenleiste aktivId={artikel?.id ?? null} suchRef={suchRef} />
         )}
-        <main className="buehne" ref={buehneRef} tabIndex={-1} onScroll={merkePosition}>
-          {route.art === 'start' ? (
-            <Start />
-          ) : route.art === 'artikel' ? (
-            artikel ? (
-              <ArtikelAnsicht key={artikel.id} artikel={artikel} />
+        {/* Lesespalte: oben die Bühne (rollt), darunter die Podcast-Leiste, solange ein
+            Podcast geladen ist — sie verdeckt keinen Text und bleibt beim Seitenwechsel. */}
+        <div className="spalte">
+          <main className="buehne" ref={buehneRef} tabIndex={-1} onScroll={merkePosition}>
+            {route.art === 'start' ? (
+              <Start />
+            ) : route.art === 'artikel' ? (
+              artikel ? (
+                <ArtikelAnsicht key={artikel.id} artikel={artikel} />
+              ) : (
+                <NichtGefunden id={route.id} />
+              )
+            ) : tagebuchDatum ? (
+              <TagebuchAnsicht key={tagebuchDatum} datum={tagebuchDatum} />
+            ) : inDokumenten ? (
+              dokumentId ? (
+                <DokumentAnsicht key={dokumentId} id={dokumentId} />
+              ) : (
+                <DokumenteUebersicht />
+              )
             ) : (
-              <NichtGefunden id={route.id} />
-            )
-          ) : tagebuchDatum ? (
-            <TagebuchAnsicht key={tagebuchDatum} datum={tagebuchDatum} />
-          ) : inDokumenten ? (
-            dokumentId ? (
-              <DokumentAnsicht key={dokumentId} id={dokumentId} />
-            ) : (
-              <DokumenteUebersicht />
-            )
-          ) : (
-            <NichtGefunden />
-          )}
-        </main>
+              <NichtGefunden />
+            )}
+          </main>
+          <PodcastLeiste aktivId={artikel?.id ?? null} />
+        </div>
       </div>
     </div>
   );

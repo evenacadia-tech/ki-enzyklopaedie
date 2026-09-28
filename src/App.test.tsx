@@ -12,6 +12,8 @@ import { BROWSER_KEY as DOKUMENTE_KEY } from './dokumente/speicher';
 import { konfiguriereDokumente } from './dokumente/zustand';
 import * as dialoge from './dokumente/dialoge';
 import { fakeSpeicher } from './test/fake-dokumente';
+import { PODCAST_KEY, _abspielerZuruecksetzen, _audioFuerTests } from './podcast/abspieler';
+import { podcastZu } from './podcast/katalog';
 
 // Verdrahtungs-Test gegen den ECHTEN Bestand: Route → Artikel, Suche → Treffer,
 // Register-Umschalter, Tagebuch → Browser-Speicher. Die reinen Logiken haben eigene Tests.
@@ -34,6 +36,7 @@ async function frisch() {
   window.location.hash = '';
   konfiguriereTagebuch(null);
   konfiguriereDokumente(null);
+  _abspielerZuruecksetzen();
 }
 
 describe('App', () => {
@@ -511,6 +514,121 @@ describe('Lesestrecke und Lesefortschritt', () => {
     const start2 = screen.getByRole('region', { name: 'Weiterlesen' });
     expect(within(start2).getByText(`2 von ${strecke.length} gelesen`)).toBeInTheDocument();
     expect(within(start2).getByRole('link', { name: new RegExp('Weiter.*' + strecke[2].titel.slice(0, 12)) })).toBeInTheDocument();
+  });
+});
+
+describe('Podcast', () => {
+  beforeEach(async () => {
+    await frisch();
+    // jsdom spielt nichts ab: play/pause melden, was ein Browser melden würde.
+    vi.spyOn(HTMLMediaElement.prototype, 'play').mockImplementation(function (this: HTMLMediaElement) {
+      this.dispatchEvent(new Event('play'));
+      return Promise.resolve();
+    });
+    vi.spyOn(HTMLMediaElement.prototype, 'pause').mockImplementation(function (this: HTMLMediaElement) {
+      this.dispatchEvent(new Event('pause'));
+    });
+    vi.spyOn(HTMLMediaElement.prototype, 'load').mockImplementation(() => {});
+  });
+  afterEach(() => {
+    cleanup();
+    vi.restoreAllMocks();
+  });
+
+  const podcast = podcastZu('timeline')!;
+  const kopf = () => within(screen.getByRole('article').querySelector('header')!);
+
+  it('zeigt den Knopf neben dem Titel nur bei Artikeln mit Podcast', () => {
+    render(<App />);
+    setzeHash('#/artikel/timeline');
+    const knopf = kopf().getByRole('button', { name: /^Podcast abspielen/ });
+    expect(knopf).toHaveTextContent('20 min');
+    expect(knopf).toHaveAttribute('title', `Podcast: ${podcast.titel}`);
+    expect(screen.queryByRole('region', { name: 'Podcast' })).not.toBeInTheDocument();
+
+    setzeHash('#/artikel/rag');
+    expect(kopf().queryByRole('button', { name: /Podcast/ })).not.toBeInTheDocument();
+  });
+
+  it('startet mit dem Knopf, zeigt die Leiste und behält sie beim Wechsel zu einem anderen Artikel', async () => {
+    render(<App />);
+    setzeHash('#/artikel/timeline');
+    fireEvent.click(kopf().getByRole('button', { name: /^Podcast abspielen/ }));
+    await waitFor(() => expect(HTMLMediaElement.prototype.play).toHaveBeenCalled());
+    expect(_audioFuerTests()!.src).toMatch(/\/podcasts\/timeline\.opus$/);
+
+    const leiste = within(screen.getByRole('region', { name: 'Podcast' }));
+    expect(leiste.getByText(podcast.titel!)).toBeInTheDocument();
+    expect(leiste.getByRole('button', { name: 'Anhalten' })).toBeInTheDocument();
+    expect(leiste.getByRole('slider', { name: 'Stelle im Podcast' })).toHaveAttribute('aria-valuetext', '0:00 von 19:54');
+    // Auf dem eigenen Artikel ist der Titel kein Link.
+    expect(leiste.queryByRole('link')).not.toBeInTheDocument();
+    expect(kopf().getByRole('button', { name: /^Podcast anhalten/ })).toBeInTheDocument();
+
+    act(() => {
+      _audioFuerTests()!.currentTime = 90;
+      _audioFuerTests()!.dispatchEvent(new Event('timeupdate'));
+    });
+    expect(leiste.getByText('1:30')).toBeInTheDocument();
+    expect(leiste.getByText('−18:24')).toBeInTheDocument();
+
+    setzeHash('#/artikel/rag');
+    const weiter = within(screen.getByRole('region', { name: 'Podcast' }));
+    expect(weiter.getByRole('link', { name: enzyklopaedie.nachId('timeline')!.titel })).toHaveAttribute('href', '#/artikel/timeline');
+    fireEvent.click(weiter.getByRole('button', { name: 'Anhalten' }));
+    expect(weiter.getByRole('button', { name: 'Abspielen' })).toBeInTheDocument();
+    expect(JSON.parse(window.localStorage.getItem(PODCAST_KEY)!).stellen.timeline).toBe(90);
+
+    fireEvent.click(weiter.getByRole('button', { name: 'Podcast schließen' }));
+    expect(screen.queryByRole('region', { name: 'Podcast' })).not.toBeInTheDocument();
+  });
+
+  it('springt mit dem Regler erst beim Loslassen, spult und ändert das Tempo', async () => {
+    render(<App />);
+    setzeHash('#/artikel/timeline');
+    fireEvent.click(kopf().getByRole('button', { name: /^Podcast abspielen/ }));
+    await waitFor(() => expect(HTMLMediaElement.prototype.play).toHaveBeenCalled());
+    const leiste = within(screen.getByRole('region', { name: 'Podcast' }));
+    const regler = leiste.getByRole('slider', { name: 'Stelle im Podcast' });
+    const audio = _audioFuerTests()!;
+
+    fireEvent.change(regler, { target: { value: '600' } });
+    expect(regler).toHaveAttribute('aria-valuetext', '10:00 von 19:54');
+    expect(audio.currentTime).toBe(0);
+    fireEvent.pointerUp(regler);
+    expect(audio.currentTime).toBe(600);
+
+    fireEvent.click(leiste.getByRole('button', { name: '15 Sekunden zurück' }));
+    expect(audio.currentTime).toBe(585);
+    fireEvent.click(leiste.getByRole('button', { name: '30 Sekunden vor' }));
+    expect(audio.currentTime).toBe(615);
+
+    fireEvent.click(leiste.getByRole('button', { name: 'Tempo 1×, ändern' }));
+    expect(leiste.getByRole('button', { name: 'Tempo 1,25×, ändern' })).toHaveTextContent('1,25×');
+    expect(audio.playbackRate).toBe(1.25);
+  });
+
+  it('bietet bei einer gemerkten Stelle „fortsetzen“ mit der Restzeit an', () => {
+    window.localStorage.setItem(PODCAST_KEY, JSON.stringify({ tempo: 1, stellen: { timeline: 600 } }));
+    _abspielerZuruecksetzen();
+    render(<App />);
+    setzeHash('#/artikel/timeline');
+    const knopf = kopf().getByRole('button', { name: /^Podcast fortsetzen/ });
+    expect(knopf).toHaveTextContent(`noch ${Math.round((podcast.sekunden - 600) / 60)} min`);
+  });
+
+  it('zeigt einen Ladefehler in der Leiste', async () => {
+    render(<App />);
+    setzeHash('#/artikel/timeline');
+    fireEvent.click(kopf().getByRole('button', { name: /^Podcast abspielen/ }));
+    await waitFor(() => expect(HTMLMediaElement.prototype.play).toHaveBeenCalled());
+    act(() => {
+      Object.defineProperty(_audioFuerTests()!, 'error', { value: { code: 2 }, configurable: true });
+      _audioFuerTests()!.dispatchEvent(new Event('error'));
+    });
+    expect(within(screen.getByRole('region', { name: 'Podcast' })).getByRole('alert')).toHaveTextContent(
+      'Die Audiodatei ließ sich nicht laden.',
+    );
   });
 });
 

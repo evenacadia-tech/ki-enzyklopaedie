@@ -3,9 +3,11 @@ import { enzyklopaedie, type Artikel, type Quelle, type Verweis } from '../inhal
 import { hrefArtikel } from '../router';
 import { host, istTauri, oeffneExtern } from '../oeffnen';
 import { setzeGelesen, useGelesen } from '../lesefortschritt';
+import { podcastZu } from '../podcast/katalog';
+import { PodcastKnopf } from './Podcast';
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Der Artikel: Kopf (Pfad, Titel, Synonyme) → Lede → Rumpf (flach oder gegliedert)
+// Der Artikel: Kopf (Pfad, Titel mit Podcast-Knopf, Synonyme) → Lede → Rumpf (flach oder gegliedert)
 // → Siehe auch → Quellen → Lesestrecke (Zurück / Gelesen / Weiter). Rechts die
 // Randspalte mit Fakten, Inhalt (bei gegliederten Artikeln) und „Verweist hierher".
 // Alles kommt aufgelöst aus `enzyklopaedie`; hier wird nur gerendert.
@@ -90,9 +92,12 @@ export function ArtikelAnsicht({ artikel }: { artikel: Artikel }) {
             </span>
           ) : null}
         </p>
-        <h1 className="artikel__titel" id={`titel-${a.id}`}>
-          {a.titel}
-        </h1>
+        <div className={'artikel__titelzeile' + (podcastZu(a.id) ? ' artikel__titelzeile--podcast' : '')}>
+          <h1 className="artikel__titel" id={`titel-${a.id}`}>
+            {a.titel}
+          </h1>
+          <PodcastKnopf artikelId={a.id} />
+        </div>
         {a.synonyme.length > 0 ? (
           <p className="artikel__synonyme">
             <span className="artikel__auch mono">auch</span> {a.synonyme.join(' · ')}
