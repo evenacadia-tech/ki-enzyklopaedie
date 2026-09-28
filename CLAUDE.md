@@ -210,6 +210,20 @@ User-Auftrag 28.09.2026: ein Installer-Paket, um die App einem Freund zu geben.
   aus diesem Repo.
 - `cargo fmt` NICHT über `src-tauri/src/lib.rs` laufen lassen: die Datei ist von Hand
   gesetzt, rustfmt bricht fast zweihundert Zeilen um.
+- `window.__TAURI_INTERNALS__.invoke` lässt sich im Fenster nicht ersetzen (nicht
+  beschreibbar) — einem Dialog des Betriebssystems kann ein Prüflauf so keine Antwort
+  unterschieben. `nativ:beweis` beantwortet den Öffnen-Dialog des Imports deshalb über
+  `scripts/dialog-helfer.ps1`: Fensternachrichten an das Feld „Dateiname“ (Kennung 0x47C)
+  und den Knopf „Öffnen“ (Kennung 1), ohne Maus. Der Dialog blitzt dabei kurz auf.
+- Das Write-Werkzeug schreibt `﻿` in Quelltexten gelegentlich als das unsichtbare
+  Zeichen selbst; ESLint meldet es in regulären Ausdrücken („Irregular whitespace“). Nach
+  dem Schreiben mit `\x{FEFF}` suchen.
+- Tests in `src-tauri/src/lib.rs` laufen nebeneinander: jeder braucht einen EIGENEN Namen
+  für `testordner(…)`, sonst räumt einer dem anderen die Dateien weg.
+- Schwere Läufe (Tests, Lint, Build, Beweise) lassen auf diesem Rechner den Ton in
+  Teams-Anrufen stottern (User 28.09.2026). Vorher prüfen, ob das Mikrofon in Benutzung
+  ist: ein Eintrag mit `LastUsedTimeStop = 0` unter
+  `HKCU:\Software\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\microphone`.
 
 - Vor `tauri build`/`cargo build` prüfen, dass keine Instanz der App läuft
   (`Get-Process ki-enzyklopaedie`): eine laufende .exe sperrt

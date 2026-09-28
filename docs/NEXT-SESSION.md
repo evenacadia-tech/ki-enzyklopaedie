@@ -18,6 +18,14 @@ wiederherzustellen.
   ursprüngliche steht nicht in der Datei.
 - Version auf 0.2.0, weil die App inzwischen weitergegeben wird: der Installer erkennt
   eine installierte 0.1.0 als ältere Fassung.
+- Geprüft am Endstand: 149 Tests (Vitest), 14 Tests (cargo), Lint, Build, `nativ:beweis`
+  mit dem Import am echten Fenster (echter Öffnen-Dialog, echte Datei, `tagebuch.json` und
+  `tagebuch.bak.json` nachgelesen); Vorschau im Browser bei 1280 und 960 px Breite
+  angesehen; Installer 0.2.0 über der installierten 0.1.0 angesehen, danach installiert.
+  Der Bestand des Users war nach jedem Lauf unverändert (Größe, Zeitstempel, SHA-256).
+- NICHT geprüft: eine Datei, die der User selbst früher exportiert hat — auf diesem
+  Rechner lag keine. Die drei Fassungen des Formats sind aus der Geschichte von
+  `export.ts` nachgebaut und getestet.
 
 ## Weitergabe (28.09.2026)
 
@@ -29,7 +37,7 @@ Wunsch des Users: ein Installer-Paket, um die App einem Freund zu geben.
 - Der Installer ist jetzt deutsch, trägt Icon und Seitenbild der App und bringt das
   Hilfsprogramm für WebView2 mit. Eigene deutsche Texte, weil die von Tauri gelieferten
   beim Aktualisieren einen Satz mit Lücke zeigten.
-- Geprüft: 125 Tests (Vitest), 13 Tests (cargo), Lint, Build, `nativ:beweis`; Installer am
+- Geprüft (Stand 0.1.0, vor dem Import): Tests, Lint, Build, `nativ:beweis`; Installer am
   echten Fenster Seite für Seite durchlaufen (Bilder angesehen), auch die Seite, die beim
   Aktualisieren über eine ältere Fassung erscheint; danach lief die installierte App,
   Tagebuch und Verknüpfungen unverändert. Wiederholbar mit `npm run installer:beweis`.
