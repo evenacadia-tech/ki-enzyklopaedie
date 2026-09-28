@@ -26,6 +26,11 @@ ihn ersichtlich sein, welche Datei (und welches Audio) zu welchem Artikel der Ap
   dem User gegeben und umgesetzt habe, weil die Kurztexte veraltet waren und die Akademie
   mit dem Exportstand nur auf dem anderen Rechner liegt; Artikel und Podcast sagen jetzt
   dasselbe. Im Browser bei 1280 px angesehen (KI-Kompetenz, RAG).
+- **Geprüft am Endstand (0.3.0):** 172 Tests (Vitest), 14 Tests (cargo), Lint, Build,
+  `tauri:build`, `nativ:beweis` (Bilder nach `.playwright-mcp/beweis-0.3.0/`); der Datenordner
+  des Users war danach unverändert (7 Dateien, Größe, Zeitstempel, SHA-256). 0.3.0 installiert
+  (über 0.2.0), App wieder gestartet; Paket `weitergabe/KI-Enzyklopaedie-0.3.0.zip` gebaut,
+  Kopie auf dem Desktop ersetzt (0.2.0 liegt noch in `weitergabe/`).
 - **Nächster Schritt, sobald die erste Audiodatei kommt:** Nummer → Artikel-ID über
   `podcastQuellen(...).dateien` (Feld `nummer`), dann die Einbindung in die App bauen
   (Ablage, Format, Abspieler am Artikel). NotebookLM liefert laut Drittquellen WAV; die
