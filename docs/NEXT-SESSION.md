@@ -1,10 +1,10 @@
 # Übergabe an die nächste Sitzung
 
-Stand: 2026-09-28, Version 0.4.1. Die drei Wünsche vom 27.09.2026 sind gebaut und am
+Stand: 2026-09-28, Version 0.4.2. Die drei Wünsche vom 27.09.2026 sind gebaut und am
 echten Fenster geprüft; am 28.09.2026 kamen das Paket zum Weitergeben, der Import ins
-Tagebuch, die Quellen für Podcasts und die ersten elf Podcasts in der App dazu
-(Abschnitte unten). **Offener Auftrag:** weitere Folgen (ab 012), die der User nach und
-nach liefert, einbinden — Ablauf unter „Podcasts in der App“.
+Tagebuch, die Quellen für Podcasts und die ersten 18 Podcasts in der App dazu
+(Abschnitte unten). **Offener Auftrag:** weitere Folgen (ab 019, „Fallbeispiele“), die der
+User nach und nach liefert, einbinden — Ablauf unter „Podcasts in der App“.
 
 ## Podcasts in der App (28.09.2026, Version 0.4.0)
 
@@ -23,6 +23,15 @@ einbauen, „neben die Überschrift kommt ein stilistisch passender Playbutton�
   Build, `nativ:beweis` (`.playwright-mcp/beweis-0.4.1/`), installiert, `verbote` in der
   installierten App abgespielt, Datenordner byte-gleich, App wieder gestartet; Paket 0.4.1
   (58 MB) auf dem Desktop statt 0.4.0.
+- **Dritte Lieferung (0.4.2):** 12 → `datensouveraenitaet`, 13 → `hleg`, 14 → `harmonisierung`,
+  15 → `iso-42001-kein-freibrief`, 16 → `iso-42001`, 17 → `konformitaet`, 18 → `nist-rmf` —
+  „Governance & Zertifizierung“ vollständig. 13 („Wer haftet für die Künstliche Intelligenz“)
+  und 14 („Warum ISO-Zertifikate für KI-Compliance nicht reichen“) klingen nach anderen
+  Artikeln; gegen die Quelltexte geprüft (HLEG-Rechenschaftspflicht, Grenzen der
+  Vermutungswirkung) — passen. 267,4 MB → 34,0 MB, Lautstärke 0,1–0,2 dB darunter. Gleiche
+  Prüfungen wie 0.4.1 (`nist-rmf` in der installierten App abgespielt), Paket 0.4.2 (92 MB)
+  auf dem Desktop. `weitergabe/` behält alle älteren Pakete (nicht eingecheckt) — bei 111
+  Folgen je Fassung gut 1 GB (Zip + Installer); ältere dürfen weg, der User entscheidet.
 - **Kompression:** Opus mono 32 kbit/s, 297,6 MB → 37,8 MB (je Folge 4–7 MB), Lautstärke
   0,1–0,2 dB unter dem Original. Die Originale liegen unberührt in `Downloads`; die App braucht
   sie nicht mehr.

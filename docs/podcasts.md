@@ -85,7 +85,7 @@ Artikel?), dann je Datei:
   Mono, Sprache mit kaum Anteilen über 12 kHz; Xiph empfiehlt für Podcasts in Mono 24 kbit/s
   (<https://wiki.xiph.org/Opus_Recommended_Settings>), 32 lassen Reserve. Die Kanäle werden gemittelt
   (`pan=mono|c0=0.5*c0+0.5*c1`): ffmpegs `-ac 1` hebt den Pegel um 3 dB und bringt Spitzen an die
-  Grenze. Ergebnis der ersten elf (zwei Lieferungen, 001–011): 428,3 MB → 54,4 MB, mittlerer Pegel je
+  Grenze. Ergebnis der ersten 18 (drei Lieferungen, 001–018): 695,7 MB → 88,4 MB, mittlerer Pegel je
   Folge 0,1–0,2 dB unter dem Original (gemessen mit `volumedetect`, Quelle −23,9 bis −24,9 dB).
   `bitexact` macht die Ausgabe wiederholbar: dieselbe Quelle ergibt dieselben Bytes.
 - **Prüfung:** Die fertige Datei muss Mono sein und so lang wie die Quelle (±0,5 s), sonst bricht
@@ -105,4 +105,5 @@ In der App:
 - Größe: 3–7 MB je Folge (im Mittel knapp 5 MB); bei 111 Folgen etwa 550 MB im Repo und im Installer. GitHub empfiehlt
   Repos unter 1 GB, sperrt erst Dateien über 100 MB — deshalb kein Git LFS.
 - Das Paket für den Freund enthält die Podcasts (Entscheid beim Bauen: sie gehören zum Inhalt wie die
-  Artikel). Installer ohne Podcasts 3,5 MB, mit sieben Folgen (0.4.0) 41 MB, mit elf (0.4.1) 58 MB.
+  Artikel). Installer ohne Podcasts 3,5 MB, mit sieben Folgen (0.4.0) 41 MB, mit elf (0.4.1) 58 MB,
+  mit 18 (0.4.2) 92 MB.
