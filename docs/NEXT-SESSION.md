@@ -6,6 +6,26 @@ Tagebuch, die Quellen für Podcasts und die ersten 18 Podcasts in der App dazu
 (Abschnitte unten). **Offener Auftrag:** weitere Folgen (ab 019, „Fallbeispiele“), die der
 User nach und nach liefert, einbinden — Ablauf unter „Podcasts in der App“.
 
+## Kursbibliothek (30.09.2026) — wartet auf das Go des Users
+
+Auftrag: zu jedem Video des Kurses „BAULIG – Marketing-Accelerator“ eine sachliche
+Zusammenfassung als MD, PDF und Word in `kursbibliothek/` (nicht eingecheckt); erst einen
+Entwurf zeigen, nach dem Go alle übrigen. Regeln und Technik: `CLAUDE.md`, „Kursbibliothek“.
+
+- **Fertig:** Werkzeug (`kursbibliothek/_werkzeug/`), Kursstruktur (`kursbaum.json`, 796
+  Lektionen), Namensschema, zwei Entwürfe in allen drei Formaten: 001 „Willkommen zum
+  Marketing-Accelerator!“ und 086 „Rollenwechsel in die Perspektive eines Zivilisten“
+  (dieselbe Lektion wie das Beispiel des Users aus Claude in Chrome, zum Vergleich). PDF
+  angesehen; Word nur an Aufbau und Formatvorlagen geprüft — auf dem Rechner ist kein Word.
+- **Offen, vom User zu entscheiden:** das Go für die übrigen Lektionen; ob die zwei
+  verlinkten Fremdkurse („Technik-Setup für Werbeanzeigen“, „Retargeting – Kampagnen-Setup“)
+  dazugehören; was mit den 43 Lektionen ohne Video (Beispielseiten) und den 18 noch nicht
+  freigeschalteten geschieht.
+- **Beim Durchlauf beachten:** Der „Fortsetzen“-Stand im Konto wechselte während der Arbeit
+  auf eine Lektion, die ich nicht geöffnet hatte — dort arbeitet vermutlich noch jemand.
+  Nichts zurücksetzen. Das Chrome-Fenster (Profil `claude-kursbrowser`, Port 9333) muss
+  offen und angemeldet sein.
+
 ## Podcasts in der App (28.09.2026, Version 0.4.0)
 
 Auftrag des Users: die ersten sieben Folgen (Nummern 001–007, alle aus „EU AI Act & Recht“)

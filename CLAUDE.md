@@ -247,6 +247,29 @@ User-Auftrag 28.09.2026: ein Installer-Paket, um die App einem Freund zu geben.
   `DisplayVersion` unter `HKCU:\…\Uninstall\KI-Enzyklopädie` um und wieder zurück);
   `-- -Modus installieren` läuft durch und ersetzt die installierte App.
 
+## Kursbibliothek
+
+User-Auftrag 30.09.2026: zu jedem Video des Kurses „BAULIG – Marketing-Accelerator“
+(LearningSuite, 17 Module, 125 Sektionen, 796 Lektionen, davon 778 freigeschaltet) eine
+sachliche Zusammenfassung, je als Markdown, PDF und Word. Gehört nicht zur App.
+
+- Ort: `kursbibliothek/` (NICHT eingecheckt — Notizen zu einem bezahlten Kurs gehören
+  nicht auf GitHub). Drei gleich aufgebaute Bäume `MD/`, `PDF/`, `DOC/`, darunter
+  `Marketing-Accelerator/<NN Modul>/<NN Sektion>/<NNN Titel>`. Markdown ist die Quelle,
+  `python _werkzeug/erzeuge.py` baut daraus Word (pandoc + `vorlage.docx`) und PDF
+  (Chrome über Playwright, `druck.css`). Namen und Nummern: `_werkzeug/pfade.py` aus
+  `_werkzeug/kursbaum.json` (Lektionsnummer = Stelle im Kurs; Pfade bleiben unter 250 Zeichen).
+- Inhalt je Datei (User: „keine eigenen Kommentare“, „ganz sachlich“): Quellenzeile,
+  Kernaussage, thematische Abschnitte, „Wichtige Stellen im Video“ mit Zeitmarken. Keine
+  Einordnung, keine Wertung, in eigenen Worten. Transkripte werden NIE gespeichert (User:
+  „das darf man nicht“) — Untertitel und Standbilder nur zum Lesen im Scratchpad, danach löschen.
+- Zugang: eigenes Chrome-Profil `%LOCALAPPDATA%\claude-kursbrowser`, gestartet mit
+  `--remote-debugging-port=9333`; der User meldet sich dort selbst an (Konto der Firma).
+  Steuerung mit Python-Playwright `connect_over_cdp`. Der Player liegt im Shadow-DOM
+  (`page.locator("video")`), Standbilder über ein Canvas — ein Screenshot zeigt nur das
+  Vorschaubild. Jede geöffnete Lektion hinterlässt im Konto einen Besuch; im Konto
+  arbeitet womöglich noch jemand — den „Fortsetzen“-Stand nie zurücksetzen.
+
 ## Fallen
 
 - Der Bundler schreibt die `.exe` in `target/release` NACH dem Packen noch einmal (er
