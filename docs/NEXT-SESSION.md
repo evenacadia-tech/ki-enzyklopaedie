@@ -19,8 +19,10 @@ Entwurf zeigen, nach dem Go alle übrigen. Regeln und Technik: `CLAUDE.md`, „K
   angesehen; Word nur an Aufbau und Formatvorlagen geprüft — auf dem Rechner ist kein Word.
 - **Offen, vom User zu entscheiden:** das Go für die übrigen Lektionen; ob die zwei
   verlinkten Fremdkurse („Technik-Setup für Werbeanzeigen“, „Retargeting – Kampagnen-Setup“)
-  dazugehören; was mit den 43 Lektionen ohne Video (Beispielseiten) und den 18 noch nicht
-  freigeschalteten geschieht.
+  dazugehören; was mit den 27 freigeschalteten Lektionen geschieht, für die die
+  Kursstruktur keine Videominuten nennt (vor allem Beispielseiten — ob darin wirklich kein
+  Video steckt, ist ungeprüft). Mit Videominuten und freigeschaltet: 751 Lektionen, 4.493
+  Minuten. 18 Lektionen sind noch nicht freigeschaltet und damit nicht lesbar.
 - **Beim Durchlauf beachten:** Der „Fortsetzen“-Stand im Konto wechselte während der Arbeit
   auf eine Lektion, die ich nicht geöffnet hatte — dort arbeitet vermutlich noch jemand.
   Nichts zurücksetzen. Das Chrome-Fenster (Profil `claude-kursbrowser`, Port 9333) muss
